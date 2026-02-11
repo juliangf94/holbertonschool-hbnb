@@ -1,5 +1,4 @@
 # HBnB Evolution: Technical Documentation
-
 ## 1. Business Logic Layer - Class Diagram
 
 ```mermaid
