@@ -2,14 +2,6 @@
 
 ## 1. Business Logic Layer - Class Diagram
 
-### Visual Representation
-![Class Diagram](./HBnB_class_diagram.png)
-
-### Mermaid Code
-<details>
-<summary>Click to expand Mermaid code</summary>
-
-
 ```mermaid
 classDiagram
     class BaseModel {
@@ -89,7 +81,7 @@ classDiagram
 -   Amenity: Standalone features (like "WiFi" or "Pool") that enhance a Place.
 
 ##  Relationships:
--   Inheritance: All core entities inherit from BaseModel, promoting code reuse and a standardized data structure.
+-   Inheritance: All core entities inherit from `BaseModel`, promoting code reuse and a standardized data structure for auditing. By centralizing these attributes, any future entities added to the system will automatically inherit the ability to be uniquely identified via UUID4 and tracked through creation and update timestamps.
 
 -   Many-to-Many (Place ↔ Amenity): Modeled this way because a single property can have multiple amenities, and a single type of amenity can be associated with many properties.
 
