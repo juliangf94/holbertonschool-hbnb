@@ -74,4 +74,21 @@ classDiagram
     IRepository <|.. SQLAlchemyRepository
 
 ```
+## Architecture Overview
+
+This project follows a layered architecture combined with the Facade pattern and the Repository pattern.
+
+## 1️⃣ Presentation Layer – API Endpoints
+
+The `API_Endpoints` class represents the presentation layer of the application.  
+It exposes HTTP routes such as:
+
+- `POST /users`
+- `POST /places`
+- `POST /reviews`
+- `GET /places`
+
+This layer is responsible for handling incoming HTTP requests and forwarding them to the business layer.
+
+---
 
