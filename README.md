@@ -74,7 +74,7 @@ classDiagram
     IRepository <|.. SQLAlchemyRepository
 
 ```
-## Architecture Overview
+# Architecture Overview
 
 This project follows a layered architecture combined with the Facade pattern and the Repository pattern.
 
@@ -129,11 +129,10 @@ This promotes code reuse and consistency.
 
 ---
 
-## Persistence Layer – Repository Pattern
+# Persistence Layer – Repository Pattern
 
 The project uses the Repository pattern to abstract database operations.
 
----
 
 ## `IRepository` (Interface)
 Defines generic methods:
@@ -142,7 +141,6 @@ Defines generic methods:
 - `update(obj)`
 - `delete(id)`
 
----
 
 ## `SQLAlchemyRepository`
 Implements `IRepository` using SQLAlchemy and manages database sessions.
@@ -150,10 +148,7 @@ Implements `IRepository` using SQLAlchemy and manages database sessions.
 The facade interacts only with the `IRepository` interface, not directly with SQLAlchemy.  
 This makes the system more flexible and easier to test.
 
----
-
 ## Flow of a Request
-
 1. The client sends a request to an API endpoint.
 2. The API layer forwards the request to `HBnBFacade`.
 3. The facade applies business logic.
