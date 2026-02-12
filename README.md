@@ -140,10 +140,19 @@ Defines generic methods:
 - `update(obj)`
 - `delete(id)`
 
-#### `SQLAlchemyRepository`
+## `SQLAlchemyRepository`
 Implements `IRepository` using SQLAlchemy and manages database sessions.
 
 The facade interacts only with the `IRepository` interface, not directly with SQLAlchemy.  
 This makes the system more flexible and easier to test.
+
+---
+## Flow of a Request
+
+1. The client sends a request to an API endpoint.
+2. The API layer forwards the request to `HBnBFacade`.
+3. The facade applies business logic.
+4. The facade calls the repository to persist or retrieve data.
+5. The repository interacts with the database.
 
 ---
