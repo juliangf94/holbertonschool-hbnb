@@ -78,7 +78,7 @@ classDiagram
 
 This project follows a layered architecture combined with the Facade pattern and the Repository pattern.
 
-## 1️⃣ Presentation Layer – API Endpoints
+## 1️Presentation Layer – API Endpoints
 
 The `API_Endpoints` class represents the presentation layer of the application.  
 It exposes HTTP routes such as:
@@ -92,7 +92,7 @@ This layer is responsible for handling incoming HTTP requests and forwarding the
 
 ---
 
-## 2️⃣ Business Layer – HBnBFacade
+## 2️Business Layer – HBnBFacade
 
 The `HBnBFacade` acts as a Facade.
 
