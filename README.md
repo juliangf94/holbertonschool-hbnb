@@ -111,3 +111,20 @@ This design:
 - Improves maintainability
 
 ---
+## Domain Models
+
+The main entities of the system are:
+
+- `User`
+- `Place`
+- `Review`
+- `Amenity`
+
+All of them inherit from `BaseModel`, which provides:
+
+- A unique identifier (`UUID id`)
+- Common methods (`save()`, `update()`)
+
+This promotes code reuse and consistency.
+
+---
