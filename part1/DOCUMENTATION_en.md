@@ -25,8 +25,8 @@ end
 
 #   Explanatory Notes
 ##   Brief Description :
-    This API call allows a new user to register in the system by submitting required information such as email, username, and password.
-    The purpose of the sequence diagram is to illustrate how the system validates the input, processes the registration request, and either creates the user or returns an appropriate error response.
+-   This API call allows a new user to register in the system by submitting required information such as email, username, and password.
+-   The purpose of the sequence diagram is to illustrate how the system validates the input, processes the registration request, and either creates the user or returns an appropriate error response.
 
 ##  Flow of Interactions :
 -   The User sends a POST /users request to the API layer with the user's registration data.
