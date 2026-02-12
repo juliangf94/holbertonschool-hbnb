@@ -133,12 +133,16 @@ This promotes code reuse and consistency.
 
 The project uses the Repository pattern to abstract database operations.
 
-#### `IRepository` (Interface)
+---
+
+## `IRepository` (Interface)
 Defines generic methods:
 - `save(obj)`
 - `get(id)`
 - `update(obj)`
 - `delete(id)`
+
+---
 
 ## `SQLAlchemyRepository`
 Implements `IRepository` using SQLAlchemy and manages database sessions.
@@ -147,6 +151,7 @@ The facade interacts only with the `IRepository` interface, not directly with SQ
 This makes the system more flexible and easier to test.
 
 ---
+
 ## Flow of a Request
 
 1. The client sends a request to an API endpoint.
