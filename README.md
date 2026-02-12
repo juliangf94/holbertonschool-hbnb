@@ -92,3 +92,22 @@ This layer is responsible for handling incoming HTTP requests and forwarding the
 
 ---
 
+## 2️⃣ Business Layer – HBnBFacade
+
+The `HBnBFacade` acts as a Facade.
+
+It provides simplified methods such as:
+
+- `createUser(data)`
+- `createPlace(data)`
+- `addReview(data)`
+- `getPlace(id)`
+
+The facade centralizes the business logic and coordinates interactions between models and repositories.
+
+This design:
+- Reduces coupling
+- Simplifies the API layer
+- Improves maintainability
+
+---
