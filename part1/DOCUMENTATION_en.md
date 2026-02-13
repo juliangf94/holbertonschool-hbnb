@@ -88,6 +88,7 @@ classDiagram
     HBnBFacade ..> User : "manages"
     HBnBFacade ..> Place
     HBnBFacade ..> Review
+```
 ```mermaid
 
 classDiagram
@@ -330,6 +331,9 @@ classDiagram
 -   One-to-Many (User → Place/Review): A user can own multiple places and write multiple reviews, but each place/review belongs to a single author/owner.
 
 ## 3. User Registration - Sequence Diagram
+
+```
+
 
 ```mermaid
 sequenceDiagram
