@@ -1,4 +1,6 @@
 # HBnB Evolution: Technical Documentation
+This technical document serves as a comprehensive blueprint for the HBnB Evolution project.  
+It outlines the system architecture, business logic entities, and detailed API interaction flows to guide the implementation phase.
 # 0. Package Diagram 
 
 ```mermaid
@@ -22,7 +24,7 @@ classDiagram
             +updateUser(id, data)
             +createPlace(data)
             +addReview(data)
-            +getPlaces(filters)
+            +fetchPlaces(filters)
         }
         class BaseModel {
             <<Abstract>>
@@ -71,17 +73,10 @@ classDiagram
     IRepository <|.. SQLAlchemyRepository : "Implements"
 
     %% Style / Colors
-    style API_Endpoints fill:#d1e9ff,stroke:#1e88e5,stroke-width:2px
-
-    style HBnBFacade fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px
-    style BaseModel fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px,stroke-dasharray: 5 5
-    style User fill:#fff3e0,stroke:#fb8c00,stroke-width:1px
-    style Place fill:#fff3e0,stroke:#fb8c00,stroke-width:1px
-    style Review fill:#fff3e0,stroke:#fb8c00,stroke-width:1px
-    style Amenity fill:#fff3e0,stroke:#fb8c00,stroke-width:1px
-
-    style IRepository fill:#e8f5e9,stroke:#43a047,stroke-width:2px
-    style SQLAlchemyRepository fill:#e8f5e9,stroke:#43a047,stroke-width:2px    
+    style API_Endpoints fill:#bbdefb,stroke:#1976d2,color:#000
+    style HBnBFacade fill:#e1bee7,stroke:#7b1fa2,color:#000
+    style BaseModel fill:#f5f5f5,stroke:#9e9e9e,color:#000
+    style IRepository fill:#c8e6c9,stroke:#388e3c,color:#000 
 ```
 # Architecture Overview
 The HBnB application is designed using a **three-tier layered architecture**.  
@@ -100,7 +95,7 @@ This layer contains the "intelligence" of the system and is subdivided into two 
     + `updateUser(id, data)`
     + `createPlace(data)`
     + `addReview(data)`
-    + `getPlaces(filters)`
+    + `fetchPlaces(filters)`
 *   **Domain Models**: Entities like `User`, `Place`, `Review`, and `Amenity` define the core business objects. 
 *   **BaseModel (Abstract Class)**: All entities inherit from this base class to ensure consistency. It provides universal attributes like `UUID4 id` and audit timestamps (`created_at`, `updated_at`), common methods (`save()`, `update(data)`) facilitating the **DRY (Don't Repeat Yourself) principle**.
 ---
@@ -140,8 +135,7 @@ classDiagram
         +String email
         +String password
         +Boolean is_admin
-        +register()
-        +update_profile()
+        +update_profile(data)
     }
 
     class Place {
@@ -151,8 +145,8 @@ classDiagram
         +Float latitude
         +Float longitude
         +String owner_id
-        +list_all()
         +add_amenity(amenity_id)
+        +update_details(data)
     }
 
     class Review {
@@ -160,13 +154,12 @@ classDiagram
         +String comment
         +String place_id
         +String user_id
-        +listed()
+        +validate_rating()
     }
 
     class Amenity {
         +String name
         +String description
-        +listed()
     }
 
     %% Relation
@@ -190,18 +183,33 @@ classDiagram
     style Amenity fill:#55A358,color:#ffffff
 ```
 #   Explanatory Notes
----
+The **Business Logic Layer** is the core of the HBnB application. It defines the structure, behavior, and rules of the system's entities. This layer is designed to be independent of the database and the UI, ensuring that business rules are enforced consistently across the entire application.
 ##   Entities:
--   **BaseModel**: The foundation of all classes. It encapsulates the UUID4 unique identifier and audit timestamps (`created_at, updated_at`), ensuring that every object in the system is traceable and unique.
+-   **BaseModel**: 
+    +   The foundation of all classes. It encapsulates the `UUID4` unique identifier and audit timestamps (`created_at, updated_at`), ensuring that every object in the system is traceable and unique. 
+    +   `save()`, `update()`, and `delete()` manage the basic lifecycle state of an instance before it is handed over to the persistence layer.
 -   **User**: Represents a registered individual. It holds essential data like email and password, and manages roles (admin vs. regular user).
--   **Place**: Represents the properties listed. It includes geographical coordinates and pricing.
+    +   Includes names, unique email, and an `is_admin` flag for authorization logic
+    +   `update_profile(data)` allows the entity to manage its own state changes, adhering to the **Encapsulation** principle.
+-   **Place**: Represents the properties listed. It includes geographical coordinates and pricing. 
+    +   Stores physical details (coordinates, description) and pricing. It is linked to a `User` (Owner).
+    +   `add_amenity()` manages the association with features, and `update_details()` allows for property modifications.
 -   **Review**: A feedback entity that links a `User` with a `Place` through a rating and a comment.
+    +   Contains a numeric rating and a text comment.
+    +   `validate_rating()` ensures the data adheres to business rules (e.g., rating between 1 and 5) before persistence.
 -   **Amenity**: Standalone features (like "WiFi" or "Pool") that enhance a Place.
 
 ##  Relationships:
 -   **Inheritance**: All core entities inherit from `BaseModel`, promoting code reuse and a standardized data structure for auditing. By centralizing these attributes, any future entities added to the system will automatically inherit the ability to be uniquely identified via UUID4 and tracked through creation and update timestamps.
--   **Many-to-Many (Place ↔ Amenity)**: Modeled this way because a single property can have multiple amenities, and a single type of amenity can be associated with many properties.
--   **One-to-Many (User → Place/Review)**: A user can own multiple places and write multiple reviews, but each place/review belongs to a single author/owner.
+-   **One-to-Many (User → Place/Review)**: 
+    +   A user can own multiple `Places` and write multiple `Reviews`.
+    +   Each `Place` or `Review` belongs to a single `User`.
+-   **Composition (Place ↔ Review)**: We used a Composition relationship (*--). 
+    +   This implies that a `Review` cannot exist without a `Place`. 
+    +   If a `Place` is deleted, its associated `Reviews` are also removed to maintain data integrity.
+-   **Many-to-Many (Place ↔ Amenity)**: 
+    +   A `Place` can have multiple `Amenities`
+    +   An `Amenity` type can be associated with many different `Places`.
 
 ---
 ---
@@ -310,14 +318,14 @@ sequenceDiagram
     API->>HBnBFacade: addReview(data)
     HBnBFacade->>HBnBFacade: validate rules<br/>(comment size + note)
 
-    alt Rules validation fail
+    alt Rules validation fails
         HBnBFacade-->>API: ValidationError
         API-->>User: 400 Bad Request
     else User not authorized<br/>(e.g, not connected)
         HBnBFacade-->>API: Unauthorized access
         API-->>User: 403 Forbidden
     else Review created successfully
-        %% We validate the data before sendint to Repo
+        %% We validate the data before sending to Repo
         HBnBFacade->>Repository: save(review_object)
         Repository-->>HBnBFacade: success (review_id)
         HBnBFacade-->>API: success
@@ -332,11 +340,11 @@ end
 -   The **sequence diagram** illustrates how the HBnBFacade validates review content and coordinates with the **Repository** only after all business rules are satisfied.
 
 ##  Flow of Interactions :
-1)   **Request**: The User sends a `POST /reviews` reques to the `API (Presentation Layer)` with a rating, a comment and a `place_id`
+1)   **Request**: The User sends a `POST /reviews` request to the `API (Presentation Layer)` with a rating, a comment and a `place_id`
 2)   **Delegation**: The API receives the request and forwards it to the **HBnBFacade** via the `addReview(data)` method.
 3)   **Business Logic Validation**: The HBnBFacade validates that the rating is within the allowed range (e.g., 1-5) and checks the comment length.
-4)   The **Repository** ensures referential integrity, verifying that both the `place_id` and `user_id` exist before persisting the data."
-5)   **Error Handling (Fail-Fast)**: If the validation fail:
+4)   The **Repository** ensures referential integrity, verifying that both the `place_id` and `user_id` exist before persisting the data.
+5)   **Error Handling (Fail-Fast)**: If the validation fails:
     -   If the validation fails, the HBnBFacade returns a `ValidationError`, and the API responds with a **400 Bad Request**.
     -   If the user is not authorized or not connected, the system returns an `Unauthorized access` error, and the API responds with a **403 Forbidden**.
 6)  **Persistence**: If all validations pass, the HBnBFacade prepares the `review_object` and calls the `save()` method of the Repository. 
@@ -371,7 +379,7 @@ sequenceDiagram
         Repository-->>HBnBFacade: list_of_places
         HBnBFacade-->>API: success
         API-->>User: 200 OK + list
-    end
+end
 ```
 
 #   Explanatory Notes
