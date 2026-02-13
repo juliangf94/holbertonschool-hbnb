@@ -1,7 +1,94 @@
 # HBnB Evolution: Technical Documentation
 
-## 0. Package Diagram
+## 0. Package Diagram 
+I have 2 propostions. You can choise one you like.
+```mermaid
+classDiagram
+    direction TB
 
+    class API_Endpoints {
+        <<Presentation Layer>>
+        +POST /users
+        +POST /places
+        +POST /reviews
+        +GET /places
+    }
+
+    class HBnBFacade {
+        <<Facade>>
+        +createUser(data)
+        +createPlace(data)
+        +addReview(data)
+        +getPlace(id)
+    }
+
+    class BaseModel {
+        +UUID id
+        +DateTime created_at
+        +save()
+        +update()
+    }
+
+    class User {
+        +String email
+        +String first_name
+    }
+    class Place {
+        +String title
+        +float price
+    }
+    class Review {
+        +int rating
+        +String comment
+    }
+    class Amenity {
+        +String name
+    }
+
+    class IRepository {
+        <<Interface>>
+        +save(obj)
+        +get(id)
+        +update(obj)
+        +delete(id)
+    }
+
+    class SQLAlchemyRepository {
+        +session
+    }
+
+    %% Flux de l'application
+    API_Endpoints --> HBnBFacade : "1. Request"
+    HBnBFacade --> IRepository : "3. Persist"
+
+    %% Héritage (Généralisation)
+    BaseModel <|-- User
+    BaseModel <|-- Place
+    BaseModel <|-- Review
+    BaseModel <|-- Amenity
+
+    %% Implémentation du Repository
+    IRepository <|.. SQLAlchemyRepository
+
+    %% --- Nouvelles Relations Métier ---
+    
+    %% Un utilisateur possède des lieux
+    User "1" --o "0..*" Place : "owns"
+    
+    %% Un utilisateur écrit des avis
+    User "1" --o "0..*" Review : "writes"
+    
+    %% Un lieu reçoit des avis
+    Place "1" --* "0..*" Review : "contains"
+    
+    %% Un lieu a plusieurs équipements (et vice-versa)
+    Place "0..*" -- "0..*" Amenity : "features"
+
+    %% Lien entre la façade et les entités
+    HBnBFacade ..> User : "manages"
+    HBnBFacade ..> Place
+    HBnBFacade ..> Review
+```
 ```mermaid
 
 classDiagram
@@ -158,6 +245,11 @@ This makes the system more flexible and easier to test.
 ---
 ## 1. Business Logic Layer - Class Diagram
 
+
+
+nerxt prposition
+
+
 ```mermaid
 classDiagram
     class BaseModel {
@@ -244,6 +336,9 @@ classDiagram
 -   One-to-Many (User → Place/Review): A user can own multiple places and write multiple reviews, but each place/review belongs to a single author/owner.
 
 ## 3. User Registration - Sequence Diagram
+
+```
+
 
 ```mermaid
 sequenceDiagram
