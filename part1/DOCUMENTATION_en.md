@@ -245,6 +245,11 @@ This makes the system more flexible and easier to test.
 ---
 ## 1. Business Logic Layer - Class Diagram
 
+
+
+nerxt prposition
+
+
 ```mermaid
 classDiagram
     class BaseModel {
