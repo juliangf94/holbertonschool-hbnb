@@ -10,6 +10,7 @@ amenity_model = api.model('Amenity', {
     'name': fields.String(required=True, description='Name of the amenity')
 })
 
+
 # ------------------- Liste / Création -------------------
 @api.route('/')
 class AmenityList(Resource):
@@ -29,6 +30,7 @@ class AmenityList(Resource):
         """Lister toutes les amenities"""
         amenities = facade.get_all_amenities()
         return [{'id': a.id, 'name': a.name} for a in amenities], 200
+
 
 # ------------------- Détail / Mise à jour -------------------
 @api.route('/<string:amenity_id>')
