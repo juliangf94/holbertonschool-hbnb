@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from app.models.user import User
+from app.models.amenity import Amenity
 from app.persistence.repository import InMemoryRepository
 
 
@@ -213,3 +214,40 @@ class HBnBFacade:
         # to ensure other attributes (like first_name) are still updated even if no email is provided.
         updated_user = self.user_repo.update(user_id, user_data)
         return updated_user
+
+    # -------------------------
+    # AMENITY CRUD
+    # -------------------------
+    def create_amenity(self, amenity_data):
+        # Create a new amenity and check for duplication
+        if "name" not in amenity_data or not amenity_data["name"].strip():
+            raise ValueError("Amenity must have a non-empty name")
+
+        # Check if the amenity already exists by name
+        existing = self.amenity_repo.get_by_attribute("name", amenity_data["name"])
+        if existing:
+            raise ValueError("Amenity with this name already exists")
+
+        amenity = Amenity(**amenity_data)
+        self.amenity_repo.add(amenity)
+        return amenity
+
+    def get_amenity(self, amenity_id):
+        return self.amenity_repo.get(amenity_id)
+
+    def get_all_amenities(self):
+        return self.amenity_repo.get_all()
+
+    def update_amenity(self, amenity_id, amenity_data):
+        amenity = self.get_amenity(amenity_id)
+        if not amenity:
+            return None
+
+        # Check for duplication if the name is changed
+        if "name" in amenity_data:
+            existing = self.amenity_repo.get_by_attribute("name", amenity_data["name"])
+            if existing and existing.id != amenity_id:
+                raise ValueError("Amenity with this name already exists")
+
+        updated_amenity = self.amenity_repo.update(amenity_id, amenity_data)
+        return updated_amenity
