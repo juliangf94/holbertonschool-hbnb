@@ -2,7 +2,8 @@
 
 from flask import Flask
 from flask_restx import Api
-from app.api.v1.users import api as users_ns
+from app.api.v1.users import api as users_ns  # <-- chemin corrigé
+
 
 def create_app():
     app = Flask(__name__)
@@ -19,6 +20,7 @@ def create_app():
 
     # Placeholder: Add other namespaces later (places, reviews, amenities)
     return app
+
 
 # Crée l'application pour lancer directement avec run.py
 app = create_app()
