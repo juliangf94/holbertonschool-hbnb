@@ -1,5 +1,8 @@
 from flask import Flask
 from flask_restx import Api
+from app.services.facade import HBnBFacade
+
+facade = HBnBFacade()
 
 
 def create_app():

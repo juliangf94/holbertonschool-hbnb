@@ -1,10 +1,9 @@
 #!/usr/bin/python3
 from flask_restx import Namespace, Resource, fields
-from app.services.facade import HBnBFacade
+from app.services import facade
 
 # Create the "users" namespace
 api = Namespace('users', description='User operations')
-facade = HBnBFacade()
 
 # User model for input validation and Swagger documentation
 user_model = api.model('User', {
