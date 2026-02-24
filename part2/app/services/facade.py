@@ -70,6 +70,7 @@ class HBnBFacade:
             existing_user = self.get_user_by_email(user_data["email"])
             if existing_user and existing_user.id != user_id:
                 raise ValueError("Email already registered")
-
-            updated_user = self.user_repo.update(user_id, user_data)
+        # The update operation must be outside the email condition block 
+        # to ensure other attributes (like first_name) are still updated even if no email is provided.
+        updated_user = self.user_repo.update(user_id, user_data)
         return updated_user
