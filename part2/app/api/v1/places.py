@@ -34,14 +34,17 @@ class PlaceList(Resource):
     @api.response(400, 'Invalid input data')
     def post(self):
         """Register a new place"""
-        # Placeholder for the logic to register a new place
-        pass
+        try:
+            place = facade.create_place(request.json)
+            return place.to_dict(), 201
+        except ValueError as e:
+            return {'error': str(e)}, 400
 
     @api.response(200, 'List of places retrieved successfully')
     def get(self):
         """Retrieve a list of all places"""
-        # Placeholder for logic to return a list of all places
-        pass
+        places = facade.get_all_places()
+        return [place.to_dict() for place in places], 200
 
 @api.route('/<place_id>')
 class PlaceResource(Resource):
@@ -49,8 +52,10 @@ class PlaceResource(Resource):
     @api.response(404, 'Place not found')
     def get(self, place_id):
         """Get place details by ID"""
-        # Placeholder for the logic to retrieve a place by ID, including associated owner and amenities
-        pass
+        place = facade.get_place(place_id)
+        if place is None:
+            return {'error': 'Place not found'}, 404
+        return place.to_dict(), 200
 
     @api.expect(place_model)
     @api.response(200, 'Place updated successfully')
@@ -58,5 +63,10 @@ class PlaceResource(Resource):
     @api.response(400, 'Invalid input data')
     def put(self, place_id):
         """Update a place's information"""
-        # Placeholder for the logic to update a place by ID
-        pass
+        try:
+            place = place.update_place(place_id, request.json)
+            if place is None:
+                return {'error': 'Place not found'}, 404
+            return place.to_dict(), 200
+        except ValueError as e:
+            return {'error': str(e)}, 400
