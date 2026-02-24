@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 from flask_restx import Namespace, Resource, fields
-from app.services.facade import HBnBFacade
+# Import the shared facade instance to ensure a single in-memory data context.
+# Avoids creating multiple HBnBFacade instances with isolated state.
+from app.services import facade
 
 # Create the "users" namespace
 api = Namespace('users', description='User operations')
-facade = HBnBFacade()
 
 # User model for input validation and Swagger documentation
 user_model = api.model('User', {
@@ -74,7 +75,8 @@ class UserResource(Resource):
     def put(self, user_id):
         """Update an existing user"""
         user_data = api.payload
-
+        # We delegate the existence and email validation directly to the Facade
+        """
         # Check if the user exists
         user = facade.get_user(user_id)
         if not user:
@@ -85,11 +87,15 @@ class UserResource(Resource):
             existing_user = facade.get_user_by_email(user_data['email'])
             if existing_user and existing_user.id != user_id:
                 return {'error': 'Email already registered'}, 400
-
+        """
         # Update the user
         try:
             updated_user = facade.update_user(user_id, user_data)
+            # If the facade returns None, the user doesn't exist
+            if not updated_user:
+                return {'error': 'User not found'}, 404
         except ValueError as e:
+            # The facade raises a ValueError if the email is taken
             return {'error': str(e)}, 400
 
         return {

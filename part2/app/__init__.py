@@ -20,7 +20,9 @@ def create_app():
 
     # Placeholder: Add other namespaces later (places, reviews, amenities)
     return app
-
-
+# Instantiating the app here causes circular imports. 
+# In the Application Factory pattern, this must be done inside run.py.
+"""
 # Crée l'application pour lancer directement avec run.py
 app = create_app()
+"""
