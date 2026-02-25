@@ -1,5 +1,6 @@
 from flask_restx import Namespace, Resource, fields
 from app.services import facade
+from flask import request
 
 api = Namespace('reviews', description='Review operations')
 
@@ -62,4 +63,4 @@ class ReviewResource(Resource):
         success = facade.delete_review(review_id)
         if not success:
             return {'error': 'Review not found'}, 404
-        return {'message': 'Review deleted sucessfully'}, 200
+        return {'message': 'Review deleted successfully'}, 200
