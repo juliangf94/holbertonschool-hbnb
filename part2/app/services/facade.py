@@ -2,8 +2,8 @@
 
 from app.models.user import User
 from app.models.amenity import Amenity
+from app.models.place import Place
 from app.persistence.repository import InMemoryRepository
-
 
 class HBnBFacade:
     """
@@ -16,8 +16,10 @@ class HBnBFacade:
         self.place_repo = InMemoryRepository()
         self.review_repo = InMemoryRepository()
         self.amenity_repo = InMemoryRepository()
-
-
+    
+    # ==========================================
+    # PLACES CRUD
+    # ==========================================
     def create_place(self, place_data):
         # Field requirements
         required_fields = ['title', 'price', 'latitude', 'longitude', 'owner_id']
@@ -38,54 +40,58 @@ class HBnBFacade:
             raise ValueError("Longitude must be between -180 and 180")
 
         # Owner exists?
-        owner = self.user_repo.get(User, place_data['owner_id'])
+        owner = self.user_repo.get(place_data['owner_id'])
         if owner is None:
             raise ValueError("Owner not found")
-
-        # Amenities check (if exists)
-        amenities = []
-        if 'amenities' in place_data:
-            for amenity_id in place_data['amenities']:
-                amenity = self.amenity_repo.get(Amenity, amenity_id)
-                if amenity is None:
-                    raise ValueError(f"Amenity not found: {amenity_id}")
-                amenities.append(amenity)
 
         # Create place
         place = Place(
             title=place_data['title'],
-            description=place_data.get('description'),
+            description=place_data.get('description', ""),
             price=place_data['price'],
             latitude=place_data['latitude'],
             longitude=place_data['longitude'],
             owner_id=place_data['owner_id']
         )
 
+        # Amenities check (if exists)
+        amenities = []
+        if 'amenities' in place_data:
+            for amenity_id in place_data['amenities']:
+                # InMemoryRepository.get() only accepts obj_id since each entity uses its own repository instance.
+                amenity = self.amenity_repo.get(amenity_id)
+                if amenity is None:
+                    raise ValueError(f"Amenity not found: {amenity_id}")
+                amenities.append(amenity)
+
         # Add amenities
         place.amenities = amenities
 
         # Save place
-        self.place_repo.new(place)
-        self.place_repo.save()
+        """self.place_repo.new(place)
+        self.place_repo.save()"""
+        # we use our method add
+        self.place_repo.add(place)
+        owner.places.append(place)
 
         return place
 
 
     def get_place(self, place_id):
         # Get place
-        place = self.place_repo.get(Place, place_id)
+        place = self.place_repo.get(place_id)
         if place is None:
             return None
 
         # Get owner
-        owner = self.user_repo.get(User, place.owner_id)
+        owner = self.user_repo.get(place.owner_id)
         place.owner = owner
 
         # Get amenities
         amenities = []
         for amenity in place.amenities:
             if isinstance(amenity, str):
-                amenity_obj = self.amenity_repo.get(Amenity, amenity)
+                amenity_obj = self.amenity_repo.get(amenity)
                 if amenity_obj:
                     amenities.append(amenity_obj)
             else:
@@ -96,17 +102,17 @@ class HBnBFacade:
 
 
     def get_all_places(self):
-        places = self.place_repo.all(Place)
+        places = self.place_repo.get_all()
         result = []
 
         for place in places:
-            owner = self.user_repo.get(User, place.owner_id)
+            owner = self.user_repo.get(place.owner_id)
             place.owner = owner
 
             amenities = []
             for amenity in place.amenities:
                 if isinstance(amenity, str):
-                    amenity_obj = self.amenity_repo.get(Amenity, amenity)
+                    amenity_obj = self.amenity_repo.get(amenity)
                     if amenity_obj:
                         amenities.append(amenity_obj)
                     else:
@@ -118,7 +124,7 @@ class HBnBFacade:
 
     def update_place(self, place_id, place_data):
         # Get original place
-        place = self.place_repo.get(Place, place_id)
+        place = self.place_repo.get(place_id)
         if place is None:
             return None
 
@@ -142,7 +148,7 @@ class HBnBFacade:
                 if field == 'amenities':
                     amenities_list = []
                     for amenity_id in value:
-                        amenity = self.amenity_repo.get(Amenity, amenity_id)
+                        amenity = self.amenity_repo.get(amenity_id)
                         if amenity is None:
                             raise ValueError(f"Amenity not found: {amenity_id}")
                         amenities_list.append(amenity)
@@ -150,12 +156,13 @@ class HBnBFacade:
                 else:
                     setattr(place, field, value)
 
-        # Save updated place
-        self.place_repo.save()
+        """# Save updated place
+        self.place_repo.save()"""
         return place
     # -------------------------
-    # CREATE
+    # USERS CRUD
     # -------------------------
+    # Create
     def create_user(self, user_data):
         """
         Create a new user and store it in the repository.

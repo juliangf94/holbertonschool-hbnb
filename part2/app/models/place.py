@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
 from app.models.base_model import BaseModel
-from app.models.user import User
 
 
 class Place(BaseModel):
-    def __init__(self, title, description, price, latitude, longitude, owner):
+    def __init__(self, title, description, price, latitude, longitude, owner_id):
         super().__init__()
 
         try:
@@ -27,20 +26,19 @@ class Place(BaseModel):
         if not (-180 <= longitude <= 180):
             raise ValueError("Invalid longitude")
 
-        if not isinstance(owner, User):
-            raise ValueError("Owner must be a User")
+        if not isinstance(owner_id, str) or not owner_id.strip():
+            raise ValueError("Invalid owner_id")
 
         self.title = title
         self.description = description
         self.price = price
         self.latitude = latitude
         self.longitude = longitude
-        self.owner = owner
+        self.owner_id = owner_id
 
         self.reviews = [] # List to store related reviews
         self.amenities = [] # List to store related amenities
 
-        owner.places.append(self)
 
     def add_review(self, review):
         """

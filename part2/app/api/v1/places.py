@@ -1,3 +1,4 @@
+from flask import request
 from flask_restx import Namespace, Resource, fields
 from app.services import facade
 
@@ -36,7 +37,15 @@ class PlaceList(Resource):
         """Register a new place"""
         try:
             place = facade.create_place(request.json)
-            return place.to_dict(), 201
+            return {
+                'id': place.id,
+                'title': place.title,
+                'description': place.description,
+                'price': place.price,
+                'latitude': place.latitude,
+                'longitude': place.longitude,
+                'owner_id': place.owner_id
+            }, 201
         except ValueError as e:
             return {'error': str(e)}, 400
 
@@ -44,7 +53,12 @@ class PlaceList(Resource):
     def get(self):
         """Retrieve a list of all places"""
         places = facade.get_all_places()
-        return [place.to_dict() for place in places], 200
+        return [{
+            'id': p.id,
+            'title': p.title,
+            'latitude': p.latitude,
+            'longitude': p.longitude
+        } for p in places], 200
 
 @api.route('/<place_id>')
 class PlaceResource(Resource):
@@ -55,7 +69,21 @@ class PlaceResource(Resource):
         place = facade.get_place(place_id)
         if place is None:
             return {'error': 'Place not found'}, 404
-        return place.to_dict(), 200
+        return {
+            'id': place.id,
+            'title': place.title,
+            'description': place.description,
+            'price': place.price,
+            'latitude': place.latitude,
+            'longitude': place.longitude,
+            'owner': {
+                'id': place.owner.id,
+                'first_name': place.owner.first_name,
+                'last_name': place.owner.last_name,
+                'email': place.owner.email
+            } if getattr(place, 'owner', None) else None,
+            'amenities': [{'id': a.id, 'name': a.name} for a in place.amenities] if hasattr(place, 'amenities') else []
+        }, 200
 
     @api.expect(place_model)
     @api.response(200, 'Place updated successfully')
@@ -64,9 +92,17 @@ class PlaceResource(Resource):
     def put(self, place_id):
         """Update a place's information"""
         try:
-            place = place.update_place(place_id, request.json)
+            place = facade.update_place(place_id, request.json)
             if place is None:
                 return {'error': 'Place not found'}, 404
-            return place.to_dict(), 200
+            return {
+                'id': place.id,
+                'title': place.title,
+                'description': place.description,
+                'price': place.price,
+                'latitude': place.latitude,
+                'longitude': place.longitude,
+                'owner_id': place.owner_id
+            }, 200
         except ValueError as e:
             return {'error': str(e)}, 400
