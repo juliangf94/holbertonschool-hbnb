@@ -2,26 +2,30 @@
 from flask import Flask
 from flask_restx import Api
 from app.api.v1.users import api as users_ns
+from app.api.v1.amenities import api as amenities_ns
 
 def create_app():
+    """
+    Application Factory for Flask.
+    Returns a Flask app with all API namespaces registered.
+    """
     app = Flask(__name__)
+    
+    # Create the Flask-RestX API
     api = Api(
         app,
         version='1.0',
         title='HBnB API',
         description='HBnB Application API',
-        doc='/api/v1/'  # Swagger UI accessible ici
+        doc='/api/v1/'
     )
 
     # Register the users namespace
     api.add_namespace(users_ns, path='/api/v1/users')
 
-    # Placeholder: Add other namespaces later (places, reviews, amenities)
-    return app
+    # Register the amenities namespace
+    api.add_namespace(amenities_ns, path='/api/v1/amenities')
 
-# Instantiating the app here causes circular imports. 
-# In the Application Factory pattern, this must be done inside run.py.
-"""
-# Crée l'application pour lancer directement avec run.py
-app = create_app()
-"""
+    # Placeholder: other namespaces like places or reviews can be added here later
+    return app
+    
