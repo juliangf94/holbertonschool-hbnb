@@ -23,7 +23,24 @@ class HBnBFacade:
         """
         Create a new user and store it in the repository.
         """
-        user = User(**user_data)
+        # Collects all errors
+        errors = []
+
+        if self.get_user_by_email(user_data.get('email')):
+            errors.append("Email already registered")
+
+        user = None
+        try:
+            # We create the user object
+            user = User(**user_data)
+        except ValueError as e:
+            errors.append(str(e))
+
+        # Separate errors with ", "
+        if errors:
+            raise ValueError(", ".join(errors))
+
+        # We save it in the database
         self.user_repo.add(user)
         return user
 

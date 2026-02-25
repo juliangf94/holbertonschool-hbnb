@@ -19,18 +19,17 @@ user_model = api.model('User', {
 class UserList(Resource):
     @api.expect(user_model, validate=True)
     @api.response(201, 'User successfully created')
-    @api.response(400, 'Email already registered')
-    @api.response(400, 'Invalid input data')
+    @api.response(400, 'Invalid input data or email already registered')
     def post(self):
         """Register a new user"""
         user_data = api.payload
 
-        # Check if the email is already registered
-        if facade.get_user_by_email(user_data['email']):
-            return {'error': 'Email already registered'}, 400
+        try:
+            # Create a new user
+            new_user = facade.create_user(user_data)
+        except ValueError as e:
+            return {'error': str(e)}, 400
 
-        # Create a new user
-        new_user = facade.create_user(user_data)
         return {
             'id': new_user.id,
             'first_name': new_user.first_name,
@@ -76,18 +75,6 @@ class UserResource(Resource):
         """Update an existing user"""
         user_data = api.payload
         # We delegate the existence and email validation directly to the Facade
-        """
-        # Check if the user exists
-        user = facade.get_user(user_id)
-        if not user:
-            return {'error': 'User not found'}, 404
-
-        # Check email uniqueness if it has been modified
-        if 'email' in user_data:
-            existing_user = facade.get_user_by_email(user_data['email'])
-            if existing_user and existing_user.id != user_id:
-                return {'error': 'Email already registered'}, 400
-        """
         # Update the user
         try:
             updated_user = facade.update_user(user_id, user_data)
