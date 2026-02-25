@@ -256,14 +256,14 @@ class HBnBFacade:
         required = ['text', 'rating', 'user_id', 'place_id']
         for f in required:
             if f not in review_data:
-                raise ValueError(f"Missing required field : {f}")
+                raise ValueError(f"Missing required field: {f}")
 
         # Rating requirements
         if not (1 <= review_data['rating'] <= 5):
             raise ValueError("Rating must be between 1 and 5")
 
         # User check
-        user = self.user_repo.get(User, review_data['user_id]'])
+        user = self.user_repo.get(User, review_data['user_id'])
         if user is None:
             raise ValueError("User not found")
 
@@ -313,7 +313,7 @@ class HBnBFacade:
         return review
 
     def delete_review(self, review_id):
-        review = self.review_repo.get
+        review = self.review_repo.get(Review, review_id)
         if review is None:
             return False
         self.review_repo.delete(review)
