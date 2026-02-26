@@ -275,3 +275,9 @@ class HBnBFacade:
 
         updated_amenity = self.amenity_repo.update(amenity_id, amenity_data)
         return updated_amenity
+
+    # -------------------------
+    # REVIEW CRUD
+    # -------------------------
+
+    
