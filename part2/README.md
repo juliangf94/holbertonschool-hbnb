@@ -211,8 +211,8 @@ Expected output:
 
 ## Authors
 
--   **Fabien Cousin** — [cousinfabien](https://github.com/cousinfabien)<https://github.com/cousinfabien>
--   **Georgia Boulnois** —  [Gigi-Corlay](https://github.com/Gigi-Corlay)<https://github.com/Gigi-Corlay>
--   **Julian Gonzalez** — [juliangf94](https://github.com/juliangf94)<https://github.com/Gigi-Corlay>
+-   **Fabien Cousin** — [cousinfabien](https://github.com/cousinfabien)/<https://github.com/cousinfabien>
+-   **Georgia Boulnois** —  [Gigi-Corlay](https://github.com/Gigi-Corlay)/<https://github.com/Gigi-Corlay>
+-   **Julian Gonzalez** — [juliangf94](https://github.com/juliangf94)/<https://github.com/Gigi-Corlay>
 
 *Holberton School — 2025/2026*
