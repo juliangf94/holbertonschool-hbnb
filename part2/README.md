@@ -1,68 +1,218 @@
-##   Describe the purpose of each directory and file.
-##   Include instructions on how to install dependencies and run the application.
+# HBnB - Part 2: Business Logic & API Endpoints
+## Table of Contents
 
-# Project Setup and Package Initialization
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Models](#models)
+- [API Endpoints](#api-endpoints)
+- [Installation](#installation)
+- [Running the Application](#running-the-application)
+- [Running the Tests](#running-the-tests)
+- [Authors](#authors)
 
-## Context
+---
 
-Before diving into the implementation of the business logic and API endpoints, it's essential to have **a well-organized project structure**. A **clear** and **modular** organization will help maintain the codebase, make it easier to integrate new features, and **ensure that your application is scalable**.
+## Overview
 
-Additionally, to simplify the implementation, you are provided with the **complete in-memory repository code**.
+**HBnB** is a simplified AirBnB clone developed as part of the Holberton School curriculum. This is **Part 2** of the project, which focuses on implementing the **Business Logic layer** and exposing it through a **RESTful API** built with Flask-RestX.
 
-## In this task, you will
+The application uses an **in-memory repository** for data persistence. This will be replaced by a SQL database-backed solution in Part 3.
 
-1. Set up the structure for the Presentation, Business Logic, and Persistence layers, creating the necessary folders, packages, and files.
-2. Prepare the project to use the Facade pattern for communication between layers.
-3. Implement the in-memory repository to handle object storage and validation.
-4. Plan for future integration of the Persistence layer, even though it won't be fully implemented in this part.
+Key design principle: all communication between the API layer and the business logic goes through a **Facade pattern**, which centralizes data operations and validation.
 
-Although the Persistence layer will be fully implemented in Part 3, this task includes the implementation of the in-memory repository. This repository will later be replaced by a database-backed solution in Part 3.
+---
 
-## Instructions
+## Architecture
 
-1. **Create the Project Directory Structure**:
+The project follows a **3-layer architecture**:
 
-    Your project should be organized into the following structure:
+```
+Presentation Layer  →  API endpoints (Flask-RestX)
+        ↓
+Business Logic Layer  →  Facade + Models
+        ↓
+Persistence Layer  →  In-Memory Repository
+```
 
-    ```text
-    hbnb/
-    ├── app/
-    │   ├── __init__.py
-    │   ├── api/
-    │   │   ├── __init__.py
-    │   │   ├── v1/
-    │   │       ├── __init__.py
-    │   │       ├── users.py
-    │   │       ├── places.py
-    │   │       ├── reviews.py
-    │   │       ├── amenities.py
-    │   ├── models/
-    │   │   ├── __init__.py
-    │   │   ├── user.py
-    │   │   ├── place.py
-    │   │   ├── review.py
-    │   │   ├── amenity.py
-    │   ├── services/
-    │   │   ├── __init__.py
-    │   │   ├── facade.py
-    │   ├── persistence/
-    │       ├── __init__.py
-    │       ├── repository.py
-    ├── run.py
-    ├── config.py
-    ├── requirements.txt
-    ├── README.md
-    ```
+The **Facade** (`app/services/facade.py`) acts as a single entry point between the API and the models, handling validation, object creation, and data retrieval.
 
-    **Explanation:**
+---
 
-    - The `app/` directory contains the core application code.
-    - The `api/` subdirectory houses the API endpoints, organized by version (`v1/`).
-    - The `models/` subdirectory contains the business logic classes (e.g., `user.py`, `place.py`).
-    - The `services/` subdirectory is where the Facade pattern is implemented, managing the interaction between layers.
-    - The `persistence/` subdirectory is where the in-memory repository is implemented. This will later be replaced by a database-backed solution using SQL Alchemy.
-    - `run.py` is the entry point for running the Flask application.
-    - `config.py` will be used for configuring environment variables and application settings.
-    - `requirements.txt` will list all the Python packages needed for the project.
-    - `README.md` will contain a brief overview of the project.
+## Project Structure
 
+```
+part2/
+├── app/
+│   ├── __init__.py           # App factory (create_app)
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── v1/
+│   │       ├── __init__.py
+│   │       ├── users.py      # User endpoints
+│   │       ├── places.py     # Place endpoints
+│   │       ├── reviews.py    # Review endpoints
+│   │       └── amenities.py  # Amenity endpoints
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── base_model.py     # Base class with id, created_at, updated_at
+│   │   ├── user.py
+│   │   ├── place.py
+│   │   ├── review.py
+│   │   └── amenity.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   └── facade.py         # HBnBFacade — central business logic
+│   ├── persistence/
+│   │   ├── __init__.py
+│   │   └── repository.py     # InMemoryRepository
+│   └── tests/
+│       ├── __init__.py
+│       └── test_models.py    # Full API test suite (54 tests)
+├── run.py                    # Application entry point
+├── config.py                 # Environment configuration
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## Models
+
+### User
+| Attribute    | Type    | Constraints                        |
+|--------------|---------|------------------------------------|
+| `first_name` | string  | Required, max 50 chars             |
+| `last_name`  | string  | Required, max 50 chars             |
+| `email`      | string  | Required, valid format, unique     |
+| `password`   | string  | Optional                           |
+| `is_admin`   | boolean | Default: False                     |
+
+### Place
+| Attribute     | Type   | Constraints                        |
+|---------------|--------|------------------------------------|
+| `title`       | string | Required, max 100 chars            |
+| `description` | string | Optional                           |
+| `price`       | float  | Required, must be positive         |
+| `latitude`    | float  | Required, between -90 and 90       |
+| `longitude`   | float  | Required, between -180 and 180     |
+| `owner_id`    | string | Required, must reference valid User|
+
+### Review
+| Attribute  | Type    | Constraints                          |
+|------------|---------|--------------------------------------|
+| `text`     | string  | Required                             |
+| `rating`   | integer | Required, between 1 and 5            |
+| `user_id`  | string  | Required, must reference valid User  |
+| `place_id` | string  | Required, must reference valid Place |
+
+### Amenity
+| Attribute | Type   | Constraints                   |
+|-----------|--------|-------------------------------|
+| `name`    | string | Required, max 50 chars, unique|
+
+---
+
+## API Endpoints
+
+All endpoints are prefixed with `/api/v1`. The interactive Swagger documentation is available at `http://127.0.0.1:5000/api/v1/`.
+
+### Users — `/api/v1/users/`
+
+| Method | Endpoint             | Description          | Success | Error       |
+|--------|----------------------|----------------------|---------|-------------|
+| POST   | `/users/`            | Create a new user    | 201     | 400         |
+| GET    | `/users/`            | List all users       | 200     | —           |
+| GET    | `/users/<id>`        | Get user by ID       | 200     | 404         |
+| PUT    | `/users/<id>`        | Update user          | 200     | 400, 404    |
+
+### Amenities — `/api/v1/amenities/`
+
+| Method | Endpoint             | Description          | Success | Error       |
+|--------|----------------------|----------------------|---------|-------------|
+| POST   | `/amenities/`        | Create a new amenity | 201     | 400         |
+| GET    | `/amenities/`        | List all amenities   | 200     | —           |
+| GET    | `/amenities/<id>`    | Get amenity by ID    | 200     | 404         |
+| PUT    | `/amenities/<id>`    | Update amenity       | 200     | 400, 404    |
+
+### Places — `/api/v1/places/`
+
+| Method | Endpoint                  | Description               | Success | Error    |
+|--------|---------------------------|---------------------------|---------|----------|
+| POST   | `/places/`                | Create a new place        | 201     | 400      |
+| GET    | `/places/`                | List all places           | 200     | —        |
+| GET    | `/places/<id>`            | Get place by ID           | 200     | 404      |
+| PUT    | `/places/<id>`            | Update place              | 200     | 400, 404 |
+| GET    | `/places/<id>/reviews`    | Get all reviews for place | 200     | 404      |
+
+### Reviews — `/api/v1/reviews/`
+
+| Method | Endpoint             | Description          | Success | Error       |
+|--------|----------------------|----------------------|---------|-------------|
+| POST   | `/reviews/`          | Create a new review  | 201     | 400         |
+| GET    | `/reviews/`          | List all reviews     | 200     | —           |
+| GET    | `/reviews/<id>`      | Get review by ID     | 200     | 404         |
+| PUT    | `/reviews/<id>`      | Update review        | 200     | 400, 404    |
+| DELETE | `/reviews/<id>`      | Delete review        | 200     | 404         |
+
+---
+
+## Installation
+
+**Requirements:** Python 3.8+
+
+Clone the repository and navigate to the project folder:
+
+```bash
+git clone https://github.com/juliangf94/holbertonschool-hbnb.git
+cd holbertonschool-hbnb/part2
+```
+
+Install the dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Set up the environment variables by copying the example file:
+
+```bash
+cp .env.example .env
+```
+
+---
+
+## Running the Application
+
+```bash
+python3 run.py
+```
+
+The API will be available at `http://127.0.0.1:5000`.
+The Swagger UI documentation is available at `http://127.0.0.1:5000/api/v1/`.
+
+---
+
+## Running the Tests
+
+The test suite covers all 17 API routes with 54 tests including success responses (20X), error responses (40X), and edge cases. The Flask test client is used internally — **no need to run the server** before executing the tests.
+
+```bash
+python3 -m pytest app/tests/test_models.py -v
+```
+
+Expected output:
+
+```
+54 passed in 0.37s
+```
+
+---
+
+## Authors
+
+-   **Fabien Cousin** — [cousinfabien]<https://github.com/cousinfabien>
+-   **Georgia Boulnois** —  [Gigi-Corlay]<https://github.com/Gigi-Corlay>
+-   **Julian Gonzalez** — [juliangf94](https://github.com/juliangf94)
+
+*Holberton School — 2025/2026*

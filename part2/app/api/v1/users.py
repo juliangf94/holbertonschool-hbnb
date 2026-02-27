@@ -26,16 +26,17 @@ class UserList(Resource):
 
         try:
             # Create a new user
+            # The facade checks for duplicates and raises ValueError if found
             new_user = facade.create_user(user_data)
+            return {
+                'id': new_user.id,
+                'first_name': new_user.first_name,
+                'last_name': new_user.last_name,
+                'email': new_user.email
+            }, 201
         except ValueError as e:
+            # We catch the error and return the 400 status code expected by Postman
             return {'error': str(e)}, 400
-
-        return {
-            'id': new_user.id,
-            'first_name': new_user.first_name,
-            'last_name': new_user.last_name,
-            'email': new_user.email
-        }, 201
 
     @api.response(200, 'List of users retrieved successfully')
     def get(self):

@@ -4,11 +4,11 @@ from app.models.user import User
 from app.models.place import Place
 
 class Review(BaseModel):
-    def __init__(self, comment, rating, place_id, user_id):
+    def __init__(self, text, rating, place_id, user_id):
         super().__init__()
 
-        if not comment:
-            raise ValueError("Comment is required")
+        if not text:
+            raise ValueError("text is required")
 
         self.validate_rating(rating)
 
@@ -18,7 +18,7 @@ class Review(BaseModel):
         if not isinstance(user_id, str):
             raise ValueError("Invalid user_id")
 
-        self.comment = comment
+        self.text = text
         self.rating = rating
         self.place_id = place_id
         self.user_id = user_id
