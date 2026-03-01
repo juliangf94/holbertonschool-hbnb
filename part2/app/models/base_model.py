@@ -1,5 +1,8 @@
+#!/usr/bin/python3
+
 import uuid
 from datetime import datetime
+
 
 class BaseModel:
     def __init__(self):
@@ -8,11 +11,15 @@ class BaseModel:
         self.updated_at = datetime.now()
 
     def save(self):
-        """Updates the updated_at timestamp whenever the object is modified."""
+        """
+        Update the updated_at timestamp whenever the object is modified
+        """
         self.updated_at = datetime.now()
 
     def update(self, data):
-        """Updates attributes from a dictionary and saves the changes."""
+        """
+        Update the attributes of the object based on the provided dictionary
+        """
         for key, value in data.items():
             if hasattr(self, key):
                 setattr(self, key, value)
@@ -21,3 +28,6 @@ class BaseModel:
     def delete(self):
         """Placeholder for delete operation (matches UML diagram)."""
         pass
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {self.id}>"

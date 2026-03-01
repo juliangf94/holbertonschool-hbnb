@@ -1,4 +1,6 @@
+#!/usr/bin/python3
 from abc import ABC, abstractmethod
+
 
 class Repository(ABC):
     @abstractmethod
@@ -43,6 +45,8 @@ class InMemoryRepository(Repository):
         obj = self.get(obj_id)
         if obj:
             obj.update(data)
+            return obj
+        return None
 
     def delete(self, obj_id):
         if obj_id in self._storage:
