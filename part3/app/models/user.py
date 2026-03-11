@@ -19,7 +19,7 @@ class User(BaseModel, db.Model):
         """Initialize a new user"""
         super().__init__()
 
-        # ✅ .strip() pour rejeter les valeurs avec seulement des espaces
+        # .strip() pour rejeter les valeurs avec seulement des espaces
         if not first_name or not first_name.strip() or len(first_name.strip()) > 50:
             raise ValueError("first_name is required and cannot exceed 50 characters")
 
@@ -39,7 +39,7 @@ class User(BaseModel, db.Model):
         self.password = bcrypt.generate_password_hash(password).decode("utf-8")
 
     def verify_password(self, password):
-        """Verify password — utilisé dans login.py"""  # ✅ Dans la classe, nom cohérent avec login.py
+        """Verify password — utilisé dans login.py"""
         return bcrypt.check_password_hash(self.password, password)
 
     def update_profile(self, data):
