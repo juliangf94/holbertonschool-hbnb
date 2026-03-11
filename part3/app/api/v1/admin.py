@@ -18,19 +18,19 @@ def admin_required(fn):
         if not current_user.get("is_admin"):
             return {"error": "Admin privileges required"}, 403
         return fn(*args, **kwargs)
-    return jwt_required()(wrapper)  # ✅ jwt_required appliqué en dernier
+    return jwt_required()(wrapper)
 
 # -------------------------
 # Modèles pour Swagger / validation
 # -------------------------
-user_model = api.model('AdminUser', {  # ✅ Renommé pour éviter les conflits
+user_model = api.model('AdminUser', {
     'email': fields.String(required=True),
     'first_name': fields.String(required=True),
     'last_name': fields.String(required=True),
     'password': fields.String(required=True)
 })
 
-amenity_model = api.model('AdminAmenity', {  # ✅ Renommé pour éviter les conflits
+amenity_model = api.model('AdminAmenity', {
     'name': fields.String(required=True, description='Name of the amenity')
 })
 
@@ -39,7 +39,7 @@ amenity_model = api.model('AdminAmenity', {  # ✅ Renommé pour éviter les con
 # -------------------------
 @api.route('/users/')
 class AdminUserCreate(Resource):
-    @admin_required          # ✅ admin_required en premier
+    @admin_required
     @api.expect(user_model)
     def post(self):
         """Créer un nouvel utilisateur (admins uniquement)"""
@@ -51,7 +51,7 @@ class AdminUserCreate(Resource):
 
 @api.route('/users/<user_id>')
 class AdminUserModify(Resource):
-    @admin_required          # ✅ admin_required en premier
+    @admin_required
     @api.expect(user_model)
     def put(self, user_id):
         """Modifier un utilisateur existant (admins uniquement)"""
@@ -71,7 +71,7 @@ class AdminUserModify(Resource):
 # -------------------------
 @api.route('/amenities/')
 class AdminAmenityCreate(Resource):
-    @admin_required          # ✅ admin_required en premier
+    @admin_required
     @api.expect(amenity_model)
     def post(self):
         """Créer un nouvel amenity (admins uniquement)"""
@@ -81,7 +81,7 @@ class AdminAmenityCreate(Resource):
 
 @api.route('/amenities/<amenity_id>')
 class AdminAmenityModify(Resource):
-    @admin_required          # ✅ admin_required en premier
+    @admin_required
     @api.expect(amenity_model)
     def put(self, amenity_id):
         """Modifier un amenity existant (admins uniquement)"""
