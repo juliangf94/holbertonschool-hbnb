@@ -87,7 +87,7 @@ class UserDetail(Resource):
         is_admin = current_user.get("is_admin", False)
         requester_id = str(current_user.get("id"))
 
-        # ✅ Seul l'owner ou un admin peut modifier
+        # Seul l'owner ou un admin peut modifier
         if not is_admin and requester_id != user_id:
             return {"error": "Unauthorized action"}, 403
 
