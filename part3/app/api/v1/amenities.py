@@ -15,7 +15,7 @@ amenity_model = api.model('Amenity', {
 @api.route('/')
 class AmenityList(Resource):
 
-    @admin_required  # ✅ Plus de @jwt_required() en double, bon ordre
+    @admin_required
     @api.expect(amenity_model, validate=True)
     @api.response(201, 'Amenity successfully created')
     @api.response(403, 'Admin privileges required')
@@ -39,7 +39,7 @@ class AmenityList(Resource):
 
 # ------------------- Détail / Mise à jour -------------------
 @api.route('/<string:amenity_id>')
-class AmenityDetail(Resource):  # ✅ Nom plus approprié
+class AmenityDetail(Resource):
 
     @api.response(200, 'Amenity retrieved successfully')
     @api.response(404, 'Amenity not found')
@@ -50,7 +50,7 @@ class AmenityDetail(Resource):  # ✅ Nom plus approprié
             return {'error': 'Amenity not found'}, 404
         return {'id': amenity.id, 'name': amenity.name}, 200
 
-    @admin_required  # ✅ Plus de @jwt_required() en double, bon ordre
+    @admin_required
     @api.expect(amenity_model, validate=False)
     @api.response(200, 'Amenity updated successfully')
     @api.response(403, 'Admin privileges required')
