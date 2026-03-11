@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/python3
 import re
 from app.extensions import db, bcrypt

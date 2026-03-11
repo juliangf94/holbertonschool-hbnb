@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/python3
 from app.extensions import db
 from app.models.base_model import BaseModel
