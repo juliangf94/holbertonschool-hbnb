@@ -19,8 +19,7 @@ class Login(Resource):
     @api.response(401, 'Invalid email or password')
     def post(self):
         """Authenticate a user and return a JWT token"""
-        data = api.payload  # ✅ Déjà validé par validate=True, plus besoin de request.get_json()
-
+        data = api.payload
         user = facade.get_user_by_email(data.get("email"))
 
         if not user or not user.verify_password(data.get("password")):
@@ -28,7 +27,7 @@ class Login(Resource):
 
         # Créer le token JWT
         access_token = create_access_token(identity={
-            "id": str(user.id),  # ✅ str() pour garantir la compatibilité UUID
+            "id": str(user.id),
             "email": user.email,
             "is_admin": user.is_admin
         })
