@@ -1,94 +1,123 @@
 #!/usr/bin/python3
 from flask_restx import Namespace, Resource, fields
-# Import the shared facade instance to ensure a single in-memory data context.
-# Avoids creating multiple HBnBFacade instances with isolated state.
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services import facade
+from app.api.v1.admin import admin_required
 
-# Create the "users" namespace
-api = Namespace('users', description='User operations')
+users_ns = Namespace("users", description="User operations")
 
-# User model for input validation and Swagger documentation
-user_model = api.model('User', {
-    'first_name': fields.String(required=True, description='First name of the user'),
-    'last_name': fields.String(required=True, description='Last name of the user'),
-    'email': fields.String(required=True, description='Email of the user')
+# Modèle pour Swagger / validation
+user_model = users_ns.model("User", {
+    "email": fields.String(required=True),
+    "first_name": fields.String(required=True),
+    "last_name": fields.String(required=True),
+    "password": fields.String(required=True)
 })
 
-# ------------------- User List / Create -------------------
-@api.route('/')
+update_model = users_ns.model("UserUpdate", {
+    "email": fields.String(),
+    "first_name": fields.String(),
+    "last_name": fields.String(),
+    "password": fields.String()
+})
+
+# ----------------- LIST / CREATE -----------------
+@users_ns.route("/")
 class UserList(Resource):
-    @api.expect(user_model, validate=True)
-    @api.response(201, 'User successfully created')
-    @api.response(400, 'Invalid input data or email already registered')
-    def post(self):
-        """Register a new user"""
-        user_data = api.payload
 
-        try:
-            # Create a new user
-            # The facade checks for duplicates and raises ValueError if found
-            new_user = facade.create_user(user_data)
-            return {
-                'id': new_user.id,
-                'first_name': new_user.first_name,
-                'last_name': new_user.last_name,
-                'email': new_user.email
-            }, 201
-        except ValueError as e:
-            # We catch the error and return the 400 status code expected by Postman
-            return {'error': str(e)}, 400
-
-    @api.response(200, 'List of users retrieved successfully')
+    @admin_required
+    @users_ns.response(200, 'List of users')
     def get(self):
-        """Retrieve all users"""
+        """Lister tous les utilisateurs (Admin only)"""
         users = facade.get_all_users()
-        users_list = [{
-            'id': user.id,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'email': user.email
-        } for user in users]
-        return users_list, 200
+        return [{
+            "id": u.id,
+            "email": u.email,
+            "first_name": u.first_name,
+            "last_name": u.last_name
+        } for u in users], 200
 
-# ------------------- Retrieve / Update a single user -------------------
-@api.route('/<string:user_id>')
-class UserResource(Resource):
-    @api.response(200, 'User details retrieved successfully')
-    @api.response(404, 'User not found')
+    @admin_required
+    @users_ns.expect(user_model, validate=True)
+    @users_ns.response(201, 'User created successfully')
+    @users_ns.response(400, 'Email already registered')
+    def post(self):
+        """Créer un nouvel utilisateur (Admin only)"""
+        data = users_ns.payload
+
+        if facade.get_user_by_email(data["email"]):
+            return {"error": "Email already registered"}, 400
+
+        new_user = facade.create_user(data)
+        return {
+            "id": new_user.id,
+            "email": new_user.email,
+            "first_name": new_user.first_name,
+            "last_name": new_user.last_name
+        }, 201
+
+
+# ----------------- GET / MODIFY / DELETE -----------------
+@users_ns.route("/<string:user_id>")
+class UserDetail(Resource):
+
+    @jwt_required()
+    @users_ns.response(200, 'User details')
+    @users_ns.response(404, 'User not found')
     def get(self, user_id):
-        """Retrieve a single user by ID"""
+        """Récupérer un utilisateur par ID"""
         user = facade.get_user(user_id)
         if not user:
-            return {'error': 'User not found'}, 404
-
+            return {"error": "User not found"}, 404
         return {
-            'id': user.id,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'email': user.email
+            "id": user.id,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name
         }, 200
 
-    @api.expect(user_model, validate=True)
-    @api.response(200, 'User updated successfully')
-    @api.response(400, 'Invalid input data or email already registered')
-    @api.response(404, 'User not found')
+    @jwt_required()
+    @users_ns.response(200, 'User updated successfully')
+    @users_ns.response(403, 'Unauthorized action')
+    @users_ns.response(404, 'User not found')
+    @users_ns.response(400, 'Email already in use')
     def put(self, user_id):
-        """Update an existing user"""
-        user_data = api.payload
-        # We delegate the existence and email validation directly to the Facade
-        # Update the user
-        try:
-            updated_user = facade.update_user(user_id, user_data)
-            # If the facade returns None, the user doesn't exist
-            if not updated_user:
-                return {'error': 'User not found'}, 404
-        except ValueError as e:
-            # The facade raises a ValueError if the email is taken
-            return {'error': str(e)}, 400
+        """Modifier un utilisateur (owner ou admin)"""
+        current_user = get_jwt_identity()
+        is_admin = current_user.get("is_admin", False)
+        requester_id = str(current_user.get("id"))
 
+        # ✅ Seul l'owner ou un admin peut modifier
+        if not is_admin and requester_id != user_id:
+            return {"error": "Unauthorized action"}, 403
+
+        user = facade.get_user(user_id)
+        if not user:
+            return {"error": "User not found"}, 404
+
+        data = users_ns.payload
+
+        if "email" in data:
+            existing = facade.get_user_by_email(data["email"])
+            if existing and str(existing.id) != user_id:
+                return {"error": "Email already in use"}, 400
+
+        updated_user = facade.update_user(user_id, data)
         return {
-            'id': updated_user.id,
-            'first_name': updated_user.first_name,
-            'last_name': updated_user.last_name,
-            'email': updated_user.email
+            "id": updated_user.id,
+            "email": updated_user.email,
+            "first_name": updated_user.first_name,
+            "last_name": updated_user.last_name
         }, 200
+
+    @admin_required
+    @users_ns.response(200, 'User deleted successfully')
+    @users_ns.response(404, 'User not found')
+    def delete(self, user_id):
+        """Supprimer un utilisateur (Admin only)"""
+        user = facade.get_user(user_id)
+        if not user:
+            return {"error": "User not found"}, 404
+
+        facade.delete_user(user_id)
+        return {"message": "User deleted successfully"}, 200

@@ -1,12 +1,9 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/python3
 from flask import request
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services import facade
 from functools import wraps
-from app.services import get_facade
-facade = get_facade()
 
 api = Namespace('admin', description='Admin operations')
 
@@ -21,18 +18,19 @@ def admin_required(fn):
         if not current_user.get("is_admin"):
             return {"error": "Admin privileges required"}, 403
         return fn(*args, **kwargs)
-    return jwt_required()(wrapper)
+    return jwt_required()(wrapper)  # ✅ jwt_required appliqué en dernier
 
 # -------------------------
 # Modèles pour Swagger / validation
 # -------------------------
-user_model = api.model('AdminUser', {
+user_model = api.model('AdminUser', {  # ✅ Renommé pour éviter les conflits
+    'email': fields.String(required=True),
     'first_name': fields.String(required=True),
     'last_name': fields.String(required=True),
     'password': fields.String(required=True)
 })
 
-amenity_model = api.model('AdminAmenity', {
+amenity_model = api.model('AdminAmenity', {  # ✅ Renommé pour éviter les conflits
     'name': fields.String(required=True, description='Name of the amenity')
 })
 
@@ -73,7 +71,7 @@ class AdminUserModify(Resource):
 # -------------------------
 @api.route('/amenities/')
 class AdminAmenityCreate(Resource):
-    @admin_required          
+    @admin_required          # ✅ admin_required en premier
     @api.expect(amenity_model)
     def post(self):
         """Créer un nouvel amenity (admins uniquement)"""
@@ -83,7 +81,8 @@ class AdminAmenityCreate(Resource):
 
 @api.route('/amenities/<amenity_id>')
 class AdminAmenityModify(Resource):
-    @admin_required          
+    @admin_required          # ✅ admin_required en premier
+    @api.expect(amenity_model)
     def put(self, amenity_id):
         """Modifier un amenity existant (admins uniquement)"""
         data = request.get_json()

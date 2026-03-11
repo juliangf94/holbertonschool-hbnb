@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from app import create_app
-from app.services import facade
+from app.services import facade 
+
 app = create_app()
 
 with app.app_context():
@@ -11,7 +12,7 @@ with app.app_context():
     if existing:
         print(f"Admin déjà existant : {admin_email}")
     else:
-        admin = facade.create_user({
+        admin = facade.create_user({ 
             "first_name": "Admin",
             "last_name": "User",
             "email": admin_email,

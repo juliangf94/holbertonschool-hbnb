@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/python3
 from flask_restx import Namespace, Resource, fields
 from app.services import facade
 from flask_jwt_extended import create_access_token
-from app.services import get_facade
-facade = get_facade()
 
 api = Namespace('auth', description='Authentication operations')
 
@@ -22,7 +19,7 @@ class Login(Resource):
     @api.response(401, 'Invalid email or password')
     def post(self):
         """Authenticate a user and return a JWT token"""
-        data = api.payload
+        data = api.payload  # ✅ Déjà validé par validate=True, plus besoin de request.get_json()
 
         user = facade.get_user_by_email(data.get("email"))
 
@@ -31,9 +28,10 @@ class Login(Resource):
 
         # Créer le token JWT
         access_token = create_access_token(identity={
-            "id": str(user.id),
+            "id": str(user.id),  # ✅ str() pour garantir la compatibilité UUID
             "email": user.email,
             "is_admin": user.is_admin
         })
 
         return {"access_token": access_token}, 200
+    

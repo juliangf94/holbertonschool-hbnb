@@ -5,6 +5,11 @@
 # =============================================================================
 
 BASE_URL="http://127.0.0.1:5000/api/v1"
+# Reset DB avant chaque run
+rm -f instance/development.db
+python setup_db.py > /dev/null 2>&1
+
+
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
@@ -95,7 +100,7 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/users/" \
 BODY=$(get_body "$RESPONSE")
 STATUS=$(echo "$RESPONSE" | tail -n 1)
 check_status "POST /users/ - Créer user (admin)" "201" "$STATUS" "$BODY"
-USER_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+USER_ID=$(echo "$BODY" | python3 -c "import sys,json; d=json.loads(' '.join(sys.stdin.read().split())); print(d.get('id',''))" 2>/dev/null)
 echo "   User ID: $USER_ID"
 
 # POST /users/ - Sans token (401)
@@ -183,7 +188,7 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/amenities/" \
 BODY=$(get_body "$RESPONSE")
 STATUS=$(echo "$RESPONSE" | tail -n 1)
 check_status "POST /amenities/ - Créer (admin) (201)" "201" "$STATUS" "$BODY"
-AMENITY_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+AMENITY_ID=$(echo "$BODY" | python3 -c "import sys,json; d=json.loads(' '.join(sys.stdin.read().split())); print(d.get('id',''))" 2>/dev/null)
 echo "   Amenity ID: $AMENITY_ID"
 
 # POST /amenities/ - Sans token (401)
@@ -253,7 +258,7 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/places/" \
 BODY=$(get_body "$RESPONSE")
 STATUS=$(echo "$RESPONSE" | tail -n 1)
 check_status "POST /places/ - Créer (201)" "201" "$STATUS" "$BODY"
-PLACE_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+PLACE_ID=$(echo "$BODY" | python3 -c "import sys,json; d=json.loads(' '.join(sys.stdin.read().split())); print(d.get('id',''))" 2>/dev/null)
 echo "   Place ID: $PLACE_ID"
 
 # POST /places/ - Prix négatif (400)
@@ -317,7 +322,8 @@ RESPONSE=$(curl -s -X POST "$BASE_URL/places/" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $USER_TOKEN" \
     -d "{\"title\": \"Review Test Place\", \"price\": 100.0, \"latitude\": 48.8566, \"longitude\": 2.3522, \"owner_id\": \"$USER_ID\"}")
-PLACE_ID=$(echo "$RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+BODY=$(get_body "$RESPONSE")
+PLACE_ID=$(echo "$BODY" | python3 -c "import sys,json; d=json.loads(' '.join(sys.stdin.read().split())); print(d.get('id',''))" 2>/dev/null)
 
 # Créer un second user pour reviewer
 RESPONSE=$(curl -s -X POST "$BASE_URL/users/" \
@@ -337,7 +343,7 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/reviews/" \
 BODY=$(get_body "$RESPONSE")
 STATUS=$(echo "$RESPONSE" | tail -n 1)
 check_status "POST /reviews/ - Créer (201)" "201" "$STATUS" "$BODY"
-REVIEW_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+REVIEW_ID=$(echo "$BODY" | python3 -c "import sys,json; d=json.loads(' '.join(sys.stdin.read().split())); print(d.get('id',''))" 2>/dev/null)
 echo "   Review ID: $REVIEW_ID"
 
 # POST /reviews/ - Rating invalide (400)
