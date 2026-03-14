@@ -8,7 +8,7 @@ api = Namespace('amenities', description='Amenity operations')
 
 # Modèle pour validation et Swagger
 amenity_model = api.model('Amenity', {
-    'name': fields.String(required=True, description='Name of the amenity')
+    'name': fields.String(required=True, description='Name of the amenity', example='Pool')
 })
 
 # ------------------- Liste / Création -------------------
@@ -21,7 +21,9 @@ class AmenityList(Resource):
     @api.response(403, 'Admin privileges required')
     @api.response(400, 'Invalid input data')
     def post(self):
-        """Créer une nouvelle amenity (Admin only)"""
+        """
+        Créer une nouvelle amenity (Admin only)
+        """
         data = api.payload
         try:
             new_amenity = facade.create_amenity(data)
@@ -51,7 +53,7 @@ class AmenityDetail(Resource):
         return {'id': amenity.id, 'name': amenity.name}, 200
 
     @admin_required
-    @api.expect(amenity_model, validate=False)
+    @api.expect(amenity_model, validate=True)
     @api.response(200, 'Amenity updated successfully')
     @api.response(403, 'Admin privileges required')
     @api.response(404, 'Amenity not found')
@@ -69,10 +71,4 @@ class AmenityDetail(Resource):
         if not updated_amenity:
             return {'error': 'Amenity not found'}, 404
 
-        return {
-            'message': 'Amenity updated successfully',
-            'amenity': {
-                'id': updated_amenity.id,
-                'name': updated_amenity.name
-            }
-        }, 200
+        return {'id': updated_amenity.id, 'name': updated_amenity.name}, 200
