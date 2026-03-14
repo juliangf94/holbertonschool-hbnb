@@ -1,39 +1,51 @@
+#!/urs/bin/python3
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+INSTANCE_DIR = os.path.join(BASE_DIR, "instance")
+
+# crée automatiquement le dossier instance s'il n'existe pas
+os.makedirs(INSTANCE_DIR, exist_ok=True)
+
 
 class Config:
-    """Configuration de base"""
+    """Base configuration"""
     SECRET_KEY = os.getenv('SECRET_KEY', 'default_secret_key')
     DEBUG = False
     TESTING = False
+
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'dev_secret_key_not_for_production')
 
 
 class DevelopmentConfig(Config):
-    """Configuration pour le développement"""
+    """Development configuration"""
     DEBUG = True
-    # Base SQLite stockée dans instance/
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///instance/development.db'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(INSTANCE_DIR, 'development.db')}"
 
 
 class TestingConfig(Config):
-    """Configuration pour les tests"""
+    """Test configuration"""
     TESTING = True
+
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
 class ProductionConfig(Config):
-    """Configuration pour la production"""
+    """Production configuration"""
     DEBUG = False
+
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
-# Mapping simple pour create_app
 config = {
     'development': DevelopmentConfig,
     'testing': TestingConfig,

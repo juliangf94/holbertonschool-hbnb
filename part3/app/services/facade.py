@@ -4,11 +4,12 @@ from app.models.amenity import Amenity
 from app.models.place import Place
 from app.models.review import Review
 from app.persistence.sqlalchemy_repository import SQLAlchemyRepository
+from app.persistence.user_repository import UserRepository
 
 
 class HBnBFacade:
     def __init__(self):
-        self.user_repo = SQLAlchemyRepository(User)
+        self.user_repo = UserRepository()
         self.place_repo = SQLAlchemyRepository(Place)
         self.review_repo = SQLAlchemyRepository(Review)
         self.amenity_repo = SQLAlchemyRepository(Amenity)
@@ -16,16 +17,16 @@ class HBnBFacade:
     # -------------------------
     # USERS CRUD
     # -------------------------
-    def create_user(self, user_data):
-        if self.get_user_by_email(user_data["email"]):
-            raise ValueError("User already exists")
+    def create_user(self, data):
+        if "password" not in data or not data["password"]:
+            raise ValueError("Password is required")
         user = User(
-            first_name=user_data["first_name"],
-            last_name=user_data["last_name"],
-            email=user_data["email"],
-            password=user_data["password"],
-            is_admin=user_data.get("is_admin", False)
+            first_name=data["first_name"],
+            last_name=data["last_name"],
+            email=data["email"],
+            is_admin=data.get("is_admin", False)
         )
+        user.set_password(data["password"])
         self.user_repo.add(user)
         return user
 
@@ -46,7 +47,9 @@ class HBnBFacade:
             existing = self.get_user_by_email(user_data["email"])
             if existing and existing.id != user_id:
                 raise ValueError("Email already registered")
-        # Mettre à jour les champs via setattr et commit via repo
+        if "password" in user_data and user_data["password"]:
+            user.set_password(user_data["password"])
+            user_data.pop("password")
         self.user_repo.update(user_id, user_data)
         return self.user_repo.get(user_id)
 
@@ -147,3 +150,9 @@ class HBnBFacade:
             return False
         self.review_repo.delete(review_id)
         return True
+
+
+# -------------------------
+# Exporter l'instance du Facade
+# -------------------------
+facade = HBnBFacade()

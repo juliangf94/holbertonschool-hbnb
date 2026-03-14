@@ -6,14 +6,6 @@ from app.models.base_model import BaseModel
 class Place(BaseModel, db.Model):
     __tablename__ = "places"
 
-    id = db.Column(db.String(60), primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(1024), default="")
-    price = db.Column(db.Float, nullable=False)
-    latitude = db.Column(db.Float, nullable=False)
-    longitude = db.Column(db.Float, nullable=False)
-    owner_id = db.Column(db.String(60), db.ForeignKey('users.id'), nullable=False)
-
     def __init__(self, title, description="", price=0, latitude=0, longitude=0, owner_id=None, **kwargs):
         super().__init__()
 

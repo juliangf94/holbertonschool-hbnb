@@ -32,9 +32,9 @@ class ReviewList(Resource):
     @api.response(400, 'Invalid input data')
     def post(self):
         """Register a new review (user from JWT)"""
-        current_user = get_jwt_identity()  # ✅ get_jwt_identity() au lieu de get_jwt()
-        data = api.payload                 # ✅ api.payload au lieu de request.json
-        data["user_id"] = str(current_user.get("id"))  # ✅ str() pour UUID
+        current_user_id = get_jwt_identity()
+        data = api.payload
+        data["user_id"] = current_user_id
 
         try:
             r = facade.create_review(data)
@@ -48,7 +48,7 @@ class ReviewList(Resource):
         except ValueError as e:
             return {'error': str(e)}, 400
 
-    @api.response(200, 'List of reviews retrieved successfully')  # ✅ Public — pas besoin de JWT
+    @api.response(200, 'List of reviews retrieved successfully')
     def get(self):
         """Retrieve all reviews (public)"""
         reviews = facade.get_all_reviews()
@@ -89,19 +89,19 @@ class ReviewResource(Resource):
     @api.response(400, 'Invalid input data')
     def put(self, review_id):
         """Update a review (owner or admin only)"""
-        current_user = get_jwt_identity()  # ✅ get_jwt_identity()
-        user_id = str(current_user.get("id"))
-        is_admin = current_user.get("is_admin", False)
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        is_admin = claims.get("is_admin", False)
 
         review = facade.get_review(review_id)
         if not review:
             return {'error': 'Review not found'}, 404
 
-        if not is_admin and review.user_id != user_id:
+        if not is_admin and review.user_id != current_user_id:
             return {'error': 'Unauthorized action'}, 403
 
         try:
-            updated = facade.update_review(review_id, api.payload)  # ✅ api.payload
+            updated = facade.update_review(review_id, api.payload)
             return {
                 'id': updated.id,
                 'text': updated.text,
@@ -118,7 +118,7 @@ class ReviewResource(Resource):
     @api.response(404, 'Review not found')
     def delete(self, review_id):
         """Delete a review (owner or admin only)"""
-        current_user = get_jwt_identity()  # ✅ get_jwt_identity()
+        current_user = get_jwt_identity()
         user_id = str(current_user.get("id"))
         is_admin = current_user.get("is_admin", False)
 

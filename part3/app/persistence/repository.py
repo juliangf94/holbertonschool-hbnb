@@ -36,9 +36,7 @@ class Repository(ABC):
 
     @abstractmethod
     def delete(self, obj_id):
-        """S
-        upprimer un objet par son ID
-        """
+
         pass
 
     @abstractmethod

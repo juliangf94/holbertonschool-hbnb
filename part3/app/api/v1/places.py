@@ -47,9 +47,9 @@ class PlaceList(Resource):
     def post(self):
         """Créer un nouveau place"""
 
-        current_user = get_jwt_identity()
+        current_user_id = get_jwt_identity()
         data = api.payload
-        data['owner_id'] = str(current_user.get('id'))
+        data['owner_id'] = current_user_id
 
         try:
             new_place = facade.create_place(data)
@@ -103,7 +103,7 @@ class PlaceDetail(Resource):
         if not place:
             return {'error': 'Place not found'}, 404
 
-        if not is_admin and place.owner_id != user_id:  # ✅ Owner ET admin autorisés
+        if not is_admin and place.owner_id != user_id:
             return {'error': 'Unauthorized action'}, 403
 
         data = api.payload
@@ -130,15 +130,15 @@ class PlaceDetail(Resource):
     @api.response(404, 'Place not found')
     def delete(self, place_id):
         """Supprimer un place (owner ou admin)"""
-        current_user = get_jwt_identity()
-        is_admin = current_user.get('is_admin', False)
-        user_id = str(current_user.get('id'))
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        is_admin = claims.get("is_admin", False)
 
         place = facade.get_place(place_id)
         if not place:
             return {'error': 'Place not found'}, 404
 
-        if not is_admin and place.owner_id != user_id:
+        if not is_admin and place.owner_id != current_user_id:
             return {'error': 'Unauthorized action'}, 403
 
         facade.delete_place(place_id)
