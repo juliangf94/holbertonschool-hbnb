@@ -15,10 +15,6 @@ def admin_required(fn):
     """
     Restrict access to admins only
     """
-<<<<<<< HEAD
-=======
-
->>>>>>> eb6ae9e49b9b539c1dccba3263f05c399326ca4e
     @wraps(fn)
     @jwt_required()
     def wrapper(*args, **kwargs):
@@ -26,24 +22,12 @@ def admin_required(fn):
         if not claims.get("is_admin"):
             return {"error": "Admin privileges required"}, 403
         return fn(*args, **kwargs)
-<<<<<<< HEAD
-    return wrapper
-
-
-=======
-
     return wrapper
 
 
 # ---------------------------------------------------
 # Swagger Models
 # ---------------------------------------------------
-    return jwt_required()(wrapper)
-
->>>>>>> eb6ae9e49b9b539c1dccba3263f05c399326ca4e
-# -------------------------
-# Swagger Models
-# -------------------------
 user_model = api.model('AdminUser', {
     'email': fields.String(required=True, description='Email address'),
     'first_name': fields.String(required=True, description='First name'),
@@ -52,15 +36,7 @@ user_model = api.model('AdminUser', {
 })
 
 amenity_model = api.model('AdminAmenity', {
-<<<<<<< HEAD
     'name': fields.String(required=True, description='Name of the amenity')
-=======
-
-    'name': fields.String(required=True)
-
-    'name': fields.String(required=True, description='Name of the amenity')
-
->>>>>>> eb6ae9e49b9b539c1dccba3263f05c399326ca4e
 })
 
 
@@ -70,27 +46,16 @@ amenity_model = api.model('AdminAmenity', {
 @api.route('/users/')
 class AdminUserCreate(Resource):
 
-<<<<<<< HEAD
-=======
-
->>>>>>> eb6ae9e49b9b539c1dccba3263f05c399326ca4e
     @admin_required
     @api.expect(user_model)
     def post(self):
         """
         Create a new user (Admin only)
         """
-<<<<<<< HEAD
-=======
-
->>>>>>> eb6ae9e49b9b539c1dccba3263f05c399326ca4e
         data = request.get_json()
-
         if facade.get_user_by_email(data.get("email")):
             return {"error": "Email already registered"}, 400
-
         new_user = facade.create_user(data)
-
         return {
             "id": new_user.id,
             "email": new_user.email,
@@ -108,22 +73,15 @@ class AdminUserModify(Resource):
         """
         Modify an existing user (Admin only)
         """
-<<<<<<< HEAD
-=======
-
->>>>>>> eb6ae9e49b9b539c1dccba3263f05c399326ca4e
         data = request.get_json()
         email = data.get("email")
-
         if email:
             existing_user = facade.get_user_by_email(email)
             if existing_user and str(existing_user.id) != user_id:
                 return {"error": "Email already in use"}, 400
-
         updated_user = facade.update_user(user_id, data)
         if not updated_user:
             return {"error": "User not found"}, 404
-
         return {
             "id": updated_user.id,
             "email": updated_user.email,
@@ -154,10 +112,6 @@ class AdminAmenityCreate(Resource):
         """
         Create a new amenity (Admin only)
         """
-<<<<<<< HEAD
-=======
-
->>>>>>> eb6ae9e49b9b539c1dccba3263f05c399326ca4e
         data = request.get_json()
         new_amenity = facade.create_amenity(data)
         return {
@@ -175,10 +129,6 @@ class AdminAmenityModify(Resource):
         """
         Modify an amenity (Admin only)
         """
-<<<<<<< HEAD
-=======
-
->>>>>>> eb6ae9e49b9b539c1dccba3263f05c399326ca4e
         data = request.get_json()
         updated_amenity = facade.update_amenity(amenity_id, data)
         if not updated_amenity:
@@ -208,27 +158,19 @@ class AdminPlaceModify(Resource):
     @admin_required
     def put(self, place_id):
         """
-<<<<<<< HEAD
-        Modify a place (Admin only)
-        """
-=======
         Modify a place (admin can bypass ownership)
         """
-
         claims = get_jwt()
         current_user_id = get_jwt_identity()
-
         is_admin = claims.get("is_admin")
 
         place = facade.get_place(place_id)
-
         if not place:
             return {"error": "Place not found"}, 404
 
         if not is_admin and str(place.owner_id) != current_user_id:
             return {"error": "Unauthorized action"}, 403
 
->>>>>>> eb6ae9e49b9b539c1dccba3263f05c399326ca4e
         data = request.get_json()
         updated_place = facade.update_place(place_id, data)
         if not updated_place:
@@ -238,24 +180,21 @@ class AdminPlaceModify(Resource):
     @admin_required
     def delete(self, place_id):
         """
-<<<<<<< HEAD
-        Delete a place (Admin only)
+        Delete a place (admin can bypass ownership)
         """
-        deleted = facade.delete_place(place_id)
-        if not deleted:
-=======
-        Delete a place
-        """
-
         claims = get_jwt()
         current_user_id = get_jwt_identity()
-
         is_admin = claims.get("is_admin")
 
         place = facade.get_place(place_id)
-
         if not place:
->>>>>>> eb6ae9e49b9b539c1dccba3263f05c399326ca4e
+            return {"error": "Place not found"}, 404
+
+        if not is_admin and str(place.owner_id) != current_user_id:
+            return {"error": "Unauthorized action"}, 403
+
+        deleted = facade.delete_place(place_id)
+        if not deleted:
             return {"error": "Place not found"}, 404
         return {"message": "Place deleted"}, 200
 
@@ -269,27 +208,19 @@ class AdminReviewModify(Resource):
     @admin_required
     def put(self, review_id):
         """
-<<<<<<< HEAD
-        Modify a review (Admin only)
+        Modify a review (admin can bypass ownership)
         """
-=======
-        Modify a review
-        """
-
         claims = get_jwt()
         current_user_id = get_jwt_identity()
-
         is_admin = claims.get("is_admin")
 
         review = facade.get_review(review_id)
-
         if not review:
             return {"error": "Review not found"}, 404
 
         if not is_admin and str(review.user_id) != current_user_id:
             return {"error": "Unauthorized action"}, 403
 
->>>>>>> eb6ae9e49b9b539c1dccba3263f05c399326ca4e
         data = request.get_json()
         updated_review = facade.update_review(review_id, data)
         if not updated_review:
@@ -299,23 +230,20 @@ class AdminReviewModify(Resource):
     @admin_required
     def delete(self, review_id):
         """
-<<<<<<< HEAD
-        Delete a review (Admin only)
+        Delete a review (admin can bypass ownership)
         """
-        deleted = facade.delete_review(review_id)
-        if not deleted:
-=======
-        Delete a review
-        """
-
         claims = get_jwt()
         current_user_id = get_jwt_identity()
-
         is_admin = claims.get("is_admin")
 
         review = facade.get_review(review_id)
-
         if not review:
->>>>>>> eb6ae9e49b9b539c1dccba3263f05c399326ca4e
+            return {"error": "Review not found"}, 404
+
+        if not is_admin and str(review.user_id) != current_user_id:
+            return {"error": "Unauthorized action"}, 403
+
+        deleted = facade.delete_review(review_id)
+        if not deleted:
             return {"error": "Review not found"}, 404
         return {"message": "Review deleted"}, 200
