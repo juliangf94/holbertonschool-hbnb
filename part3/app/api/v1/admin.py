@@ -12,7 +12,9 @@ api = Namespace('admin', description='Admin operations')
 # Admin decorator
 # ---------------------------------------------------
 def admin_required(fn):
-    """Restrict access to admins only"""
+    """
+    Restrict access to admins only
+    """
 
     @wraps(fn)
     @jwt_required()
@@ -24,7 +26,6 @@ def admin_required(fn):
             return {"error": "Admin privileges required"}, 403
 
         return fn(*args, **kwargs)
-<<<<<<< HEAD
 
     return wrapper
 
@@ -32,13 +33,11 @@ def admin_required(fn):
 # ---------------------------------------------------
 # Swagger Models
 # ---------------------------------------------------
-=======
     return jwt_required()(wrapper)
 
 # -------------------------
 # Modèles pour Swagger / validation
 # -------------------------
->>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
 user_model = api.model('AdminUser', {
     'email': fields.String(required=True),
     'first_name': fields.String(required=True),
@@ -47,11 +46,11 @@ user_model = api.model('AdminUser', {
 })
 
 amenity_model = api.model('AdminAmenity', {
-<<<<<<< HEAD
+
     'name': fields.String(required=True)
-=======
+
     'name': fields.String(required=True, description='Name of the amenity')
->>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
+
 })
 
 
@@ -60,14 +59,14 @@ amenity_model = api.model('AdminAmenity', {
 # ---------------------------------------------------
 @api.route('/users/')
 class AdminUserCreate(Resource):
-<<<<<<< HEAD
 
-=======
->>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
+
     @admin_required
     @api.expect(user_model)
     def post(self):
-        """Create a new user (Admin only)"""
+        """
+        Create a new user (Admin only)
+        """
 
         data = request.get_json()
 
@@ -86,14 +85,13 @@ class AdminUserCreate(Resource):
 
 @api.route('/users/<string:user_id>')
 class AdminUserModify(Resource):
-<<<<<<< HEAD
 
-=======
->>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
     @admin_required
     @api.expect(user_model)
     def put(self, user_id):
-        """Modify an existing user (Admin only)"""
+        """
+        Modify an existing user (Admin only)
+        """
 
         data = request.get_json()
 
@@ -123,14 +121,13 @@ class AdminUserModify(Resource):
 # ---------------------------------------------------
 @api.route('/amenities/')
 class AdminAmenityCreate(Resource):
-<<<<<<< HEAD
 
-=======
->>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
     @admin_required
     @api.expect(amenity_model)
     def post(self):
-        """Create a new amenity (Admin only)"""
+        """
+        Create a new amenity (Admin only)
+        """
 
         data = request.get_json()
 
@@ -144,14 +141,13 @@ class AdminAmenityCreate(Resource):
 
 @api.route('/amenities/<string:amenity_id>')
 class AdminAmenityModify(Resource):
-<<<<<<< HEAD
 
-=======
->>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
     @admin_required
     @api.expect(amenity_model)
     def put(self, amenity_id):
-        """Modify an amenity (Admin only)"""
+        """
+        Modify an amenity (Admin only)
+        """
 
         data = request.get_json()
 
@@ -174,7 +170,9 @@ class AdminPlaceModify(Resource):
 
     @jwt_required()
     def put(self, place_id):
-        """Modify a place (admin can bypass ownership)"""
+        """
+        Modify a place (admin can bypass ownership)
+        """
 
         claims = get_jwt()
         current_user_id = get_jwt_identity()
@@ -198,7 +196,9 @@ class AdminPlaceModify(Resource):
 
     @jwt_required()
     def delete(self, place_id):
-        """Delete a place"""
+        """
+        Delete a place
+        """
 
         claims = get_jwt()
         current_user_id = get_jwt_identity()
@@ -226,7 +226,9 @@ class AdminReviewModify(Resource):
 
     @jwt_required()
     def put(self, review_id):
-        """Modify a review"""
+        """
+        Modify a review
+        """
 
         claims = get_jwt()
         current_user_id = get_jwt_identity()
@@ -250,7 +252,9 @@ class AdminReviewModify(Resource):
 
     @jwt_required()
     def delete(self, review_id):
-        """Delete a review"""
+        """
+        Delete a review
+        """
 
         claims = get_jwt()
         current_user_id = get_jwt_identity()
