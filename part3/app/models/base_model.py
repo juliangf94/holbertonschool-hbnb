@@ -60,7 +60,9 @@ class BaseModel(db.Model):
             raise
 
     def delete(self):
-        """Delete object from database"""
+        """
+        Delete object from database
+        """
         try:
             db.session.delete(self)
             db.session.commit()

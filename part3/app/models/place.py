@@ -1,79 +1,85 @@
 #!/usr/bin/python3
 from app.extensions import db
 from app.models.base_model import BaseModel
+from app.models.amenity import Amenity
+from app.models.user import User
+
+
+# Table d'association pour les places et les amenities (many-to-many)
+place_amenity_association = db.Table(
+    'place_amenity',
+    db.Column('place_id', db.String(36), db.ForeignKey('places.id'), primary_key=True),
+    db.Column('amenity_id', db.String(60), db.ForeignKey('amenities.id'), primary_key=True)
+)
 
 
 class Place(BaseModel, db.Model):
     __tablename__ = "places"
 
-    def __init__(self, title, description="", price=0, latitude=0, longitude=0, owner_id=None, **kwargs):
-        super().__init__()
+    id = db.Column(db.String(36), primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(255), default="")
+    price = db.Column(db.Float, nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
 
-        try:
-            price = float(price)
-            latitude = float(latitude)
-            longitude = float(longitude)
-        except (ValueError, TypeError):
-            raise ValueError("Price, latitude, and longitude must be valid numbers")
+    # Relation avec l'utilisateur (owner)
+    owner_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
+    owner = db.relationship('User', backref=db.backref('places', lazy=True))
+
+    # Relation many-to-many avec les amenities
+    amenities = db.relationship(
+        'Amenity',
+        secondary=place_amenity_association,
+        lazy='subquery',
+        backref=db.backref('places', lazy=True)
+    )
+
+    def __init__(self, title, price, latitude, longitude, owner_id, description="", **kwargs):
+        super().__init__(**kwargs)
 
         if not title or not title.strip() or len(title.strip()) > 100:
-            raise ValueError("Title is required and cannot exceed 100 characters")
-
-        if description and len(description) > 1024:
-            raise ValueError("Description cannot exceed 1024 characters")
-
-        if price <= 0:
-            raise ValueError("Price must be positive")
-
-        if not (-90 <= latitude <= 90):
-            raise ValueError("Latitude must be between -90 and 90")
-
-        if not (-180 <= longitude <= 180):
-            raise ValueError("Longitude must be between -180 and 180")
-
-        if not owner_id or not str(owner_id).strip():
-            raise ValueError("Invalid owner_id")
+            raise ValueError("Place title is required and cannot exceed 100 characters")
+        if description and len(description) > 255:
+            raise ValueError("Place description cannot exceed 255 characters")
+        if price < 0:
+            raise ValueError("Price must be non-negative")
 
         self.title = title.strip()
-        self.description = description or ""
+        self.description = description.strip() if description else ""
         self.price = price
         self.latitude = latitude
         self.longitude = longitude
-        self.owner_id = str(owner_id)
+        self.owner_id = owner_id
 
-    def update_details(self, data):
-        """Update place details with validation"""
+    def update_place(self, data):
+        """
+        Met à jour les attributs de la place
+        """
         if "title" in data:
-            if not data["title"] or not data["title"].strip() or len(data["title"].strip()) > 100:
-                raise ValueError("Title is required and cannot exceed 100 characters")
-            data["title"] = data["title"].strip()
+            title = data["title"]
+            if not title or not title.strip() or len(title.strip()) > 100:
+                raise ValueError("Place title cannot be empty or exceed 100 characters")
+            data["title"] = title.strip()
 
-        if "description" in data and data["description"]:
-            if len(data["description"]) > 1024:
-                raise ValueError("Description cannot exceed 1024 characters")
+        if "description" in data:
+            description = data["description"]
+            if description and len(description) > 255:
+                raise ValueError("Place description cannot exceed 255 characters")
+            data["description"] = description.strip() if description else ""
 
         if "price" in data:
-            try:
-                data["price"] = float(data["price"])
-            except (ValueError, TypeError):
-                raise ValueError("Price must be a valid number")
-            if data["price"] <= 0:
-                raise ValueError("Price must be positive")
+            price = data["price"]
+            if price < 0:
+                raise ValueError("Price must be non-negative")
 
         if "latitude" in data:
-            try:
-                data["latitude"] = float(data["latitude"])
-            except (ValueError, TypeError):
-                raise ValueError("Latitude must be a valid number")
-            if not (-90 <= data["latitude"] <= 90):
-                raise ValueError("Latitude must be between -90 and 90")
+            data["latitude"] = data["latitude"]
 
         if "longitude" in data:
-            try:
-                data["longitude"] = float(data["longitude"])
-            except (ValueError, TypeError):
-                raise ValueError("Longitude must be a valid number")
-            if not (-180 <= data["longitude"] <= 180):
-                raise ValueError("Longitude must be between -180 and 180")
+            data["longitude"] = data["longitude"]
 
         self.update(data)
+
+    def __repr__(self):
+        return f"<Place id={self.id} title={self.title}>"
