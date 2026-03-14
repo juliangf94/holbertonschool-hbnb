@@ -2,14 +2,19 @@
 from app.extensions import db
 from app.persistence.repository import Repository
 
+
 class SQLAlchemyRepository(Repository):
-    """Repository implementation using SQLAlchemy"""
+    """
+    Repository implementation using SQLAlchemy
+    """
 
     def __init__(self, model):
         self.model = model
 
     def add(self, obj):
-        """Add a new object to the database"""
+        """
+        Add a new object to the database
+        """
         try:
             db.session.add(obj)
             db.session.commit()
@@ -19,15 +24,21 @@ class SQLAlchemyRepository(Repository):
             raise RuntimeError(f"Error adding object: {e}") from e
 
     def get(self, obj_id):
-        """Retrieve object by primary key"""
+        """
+        Retrieve object by primary key
+        """
         return db.session.get(self.model, obj_id)
 
     def get_all(self):
-        """Retrieve all objects of this model"""
+        """
+        Retrieve all objects of this model
+        """
         return self.model.query.all()
 
     def update(self, obj_id, data):
-        """Update object attributes"""
+        """
+        Update object attributes
+        """
         obj = self.get(obj_id)
         if not obj:
             return None
@@ -42,7 +53,9 @@ class SQLAlchemyRepository(Repository):
             raise RuntimeError(f"Error updating object: {e}") from e
 
     def delete(self, obj_id):
-        """Delete object by primary key"""
+        """
+        Delete object by primary key
+        """
         obj = self.get(obj_id)
         if not obj:
             return None
@@ -55,9 +68,12 @@ class SQLAlchemyRepository(Repository):
             raise RuntimeError(f"Error deleting object: {e}") from e
 
     def get_by_attribute(self, attr_name, attr_value):
-        """Retrieve first object matching attribute"""
+        """
+        Retrieve first object matching attribute
+        """
         if not hasattr(self.model, attr_name):
-            raise AttributeError(f"{self.model.__name__} has no attribute '{attr_name}'")
+            raise AttributeError(f"{self.model.__name__} 
+                                 has no attribute '{attr_name}'")
         return self.model.query.filter(
             getattr(self.model, attr_name) == attr_value
         ).first()
