@@ -24,6 +24,7 @@ def admin_required(fn):
             return {"error": "Admin privileges required"}, 403
 
         return fn(*args, **kwargs)
+<<<<<<< HEAD
 
     return wrapper
 
@@ -31,6 +32,13 @@ def admin_required(fn):
 # ---------------------------------------------------
 # Swagger Models
 # ---------------------------------------------------
+=======
+    return jwt_required()(wrapper)
+
+# -------------------------
+# Modèles pour Swagger / validation
+# -------------------------
+>>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
 user_model = api.model('AdminUser', {
     'email': fields.String(required=True),
     'first_name': fields.String(required=True),
@@ -39,7 +47,11 @@ user_model = api.model('AdminUser', {
 })
 
 amenity_model = api.model('AdminAmenity', {
+<<<<<<< HEAD
     'name': fields.String(required=True)
+=======
+    'name': fields.String(required=True, description='Name of the amenity')
+>>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
 })
 
 
@@ -48,7 +60,10 @@ amenity_model = api.model('AdminAmenity', {
 # ---------------------------------------------------
 @api.route('/users/')
 class AdminUserCreate(Resource):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
     @admin_required
     @api.expect(user_model)
     def post(self):
@@ -71,7 +86,10 @@ class AdminUserCreate(Resource):
 
 @api.route('/users/<string:user_id>')
 class AdminUserModify(Resource):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
     @admin_required
     @api.expect(user_model)
     def put(self, user_id):
@@ -105,7 +123,10 @@ class AdminUserModify(Resource):
 # ---------------------------------------------------
 @api.route('/amenities/')
 class AdminAmenityCreate(Resource):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
     @admin_required
     @api.expect(amenity_model)
     def post(self):
@@ -123,7 +144,10 @@ class AdminAmenityCreate(Resource):
 
 @api.route('/amenities/<string:amenity_id>')
 class AdminAmenityModify(Resource):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
     @admin_required
     @api.expect(amenity_model)
     def put(self, amenity_id):

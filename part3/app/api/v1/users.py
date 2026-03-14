@@ -72,6 +72,7 @@ class UserResource(Resource):
     @api.response(400, "Invalid input or email already registered")
     @api.response(404, "User not found")
     def put(self, user_id):
+<<<<<<< HEAD
         """Update a user by ID"""
         user_data = request.get_json()
         try:
@@ -84,6 +85,16 @@ class UserResource(Resource):
                     "is_admin": user.is_admin}, 200
         except ValueError as e:
             return {"message": str(e)}, 400
+=======
+        """Modifier un utilisateur (owner ou admin)"""
+        current_user = get_jwt_identity()
+        is_admin = current_user.get("is_admin", False)
+        requester_id = str(current_user.get("id"))
+
+        # Seul l'owner ou un admin peut modifier
+        if not is_admin and requester_id != user_id:
+            return {"error": "Unauthorized action"}, 403
+>>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
 
     @jwt_required()
     @api.response(204, "User deleted successfully")

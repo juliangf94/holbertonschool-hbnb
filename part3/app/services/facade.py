@@ -24,9 +24,9 @@ class HBnBFacade:
             first_name=data["first_name"],
             last_name=data["last_name"],
             email=data["email"],
+            password=data["password"],
             is_admin=data.get("is_admin", False)
         )
-        user.set_password(data["password"])
         self.user_repo.add(user)
         return user
 
