@@ -72,8 +72,9 @@ class SQLAlchemyRepository(Repository):
         Retrieve first object matching attribute
         """
         if not hasattr(self.model, attr_name):
-            raise AttributeError(f"{self.model.__name__} 
-                                 has no attribute '{attr_name}'")
+            raise AttributeError(
+                f"{self.model.__name__} has no attribute '{attr_name}'"
+            )
         return self.model.query.filter(
             getattr(self.model, attr_name) == attr_value
         ).first()
