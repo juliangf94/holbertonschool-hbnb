@@ -30,16 +30,15 @@ class ReviewList(Resource):
     @api.response(201, 'Review successfully created')
     @api.response(400, 'Invalid input data')
     def post(self):
-        """Register a new review (user from JWT)"""
-<<<<<<< HEAD
+        """
+        Register a new review (user from JWT)
+        """
         current_user_id = get_jwt_identity()
         data = api.payload
         data["user_id"] = current_user_id
-=======
         current_user = get_jwt_identity()
         data = api.payload
         data["user_id"] = str(current_user.get("id"))
->>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
 
         try:
             r = facade.create_review(data)
@@ -93,16 +92,15 @@ class ReviewResource(Resource):
     @api.response(404, 'Review not found')
     @api.response(400, 'Invalid input data')
     def put(self, review_id):
-        """Update a review (owner or admin only)"""
-<<<<<<< HEAD
+        """
+        Update a review (owner or admin only)
+        """
         current_user_id = get_jwt_identity()
         claims = get_jwt()
         is_admin = claims.get("is_admin", False)
-=======
         current_user = get_jwt_identity()
         user_id = str(current_user.get("id"))
         is_admin = current_user.get("is_admin", False)
->>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
 
         review = facade.get_review(review_id)
         if not review:
