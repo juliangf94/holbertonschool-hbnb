@@ -13,31 +13,37 @@ from app.api.v1.auth import api as auth_ns
 from app.api.v1.protected import api as protected_ns
 from app.api.v1.admin import api as admin_ns
 
-from config import config  # Assure-toi que config.py est dans le même dossier racine
+from config import config
 
 
 def create_app(config_name='development'):
     """
     Create and configure the Flask application.
     """
-    app = Flask(__name__)
+    app = Flask(__name__, instance_relative_config=True)
 
-    # Charger la configuration
-    config_class = config.get(config_name, config['default'])
+    """
+    Charger la configuration
+    """
+    config_class = config.get(config_name) or config.get('default')
     app.config.from_object(config_class)
 
-    # Initialiser les extensions
+    """
+    Initialiser les extensions
+    """
     db.init_app(app)
     bcrypt.init_app(app)
     jwt.init_app(app)
 
-    # Créer la base de données si elle n’existe pas
+    """
+    Créer la base de données si nécessaire
+    """
     with app.app_context():
-        if not os.path.exists(os.path.join(app.root_path, 'instance')):
-            os.makedirs(os.path.join(app.root_path, 'instance'))
         db.create_all()
 
-    # Configuration Swagger / JWT
+    """
+    Configuration Swagger / JWT
+    """
     authorizations = {
         'Bearer': {
             'type': 'apiKey',
@@ -57,7 +63,9 @@ def create_app(config_name='development'):
         security='Bearer'
     )
 
-    # Enregistrement des namespaces
+    """
+    Enregistrement des namespaces
+    """
     api.add_namespace(auth_ns, path='/api/v1/auth')
     api.add_namespace(protected_ns, path='/api/v1/protected')
     api.add_namespace(users_ns, path='/api/v1/users')
