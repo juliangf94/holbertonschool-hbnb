@@ -12,7 +12,6 @@ class UserRepository(SQLAlchemyRepository):
         super().__init__(User)
 
     def get_by_email(self, email):
-        """
-        Retrieve a user by email (case-insensitive)
-        """
+        if not email:
+            return None
         return self.model.query.filter_by(email=email.lower()).first()

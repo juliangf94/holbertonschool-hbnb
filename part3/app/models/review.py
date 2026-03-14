@@ -9,10 +9,8 @@ class Review(BaseModel, db.Model):
     id = db.Column(db.String(60), primary_key=True)
     text = db.Column(db.Text, nullable=False)
     rating = db.Column(db.Integer, nullable=False)
-    user_id = db.Column(db.String(60), db.ForeignKey('users.id'), nullable=False)
-    place_id = db.Column(db.String(60), db.ForeignKey('places.id'), nullable=False)
 
-    def __init__(self, text, rating, place_id, user_id, **kwargs):
+    def __init__(self, text, rating, **kwargs):
         super().__init__(**kwargs)
 
         # Validation du texte
@@ -22,16 +20,8 @@ class Review(BaseModel, db.Model):
         # Validation de la note
         self.validate_rating(rating)
 
-        # Validation des IDs
-        if not isinstance(place_id, str) or not place_id.strip():
-            raise ValueError("Invalid place_id")
-        if not isinstance(user_id, str) or not user_id.strip():
-            raise ValueError("Invalid user_id")
-
         self.text = text.strip()
         self.rating = rating
-        self.place_id = place_id
-        self.user_id = user_id
 
     def validate_rating(self, rating):
         """
@@ -52,8 +42,7 @@ class Review(BaseModel, db.Model):
         if "rating" in data:
             self.validate_rating(data["rating"])
 
-        # Appel à la méthode générique de BaseModel
         self.update(data)
 
     def __repr__(self):
-        return f"<Review id={self.id} rating={self.rating} user_id={self.user_id}>"
+        return f"<Review id={self.id} rating={self.rating}>"
