@@ -1,19 +1,20 @@
 #!/usr/bin/python3
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime
 from app.extensions import db
 
 
 class BaseModel(db.Model):
-    """Base class for all models"""
+    """
+    Base class for all models
+    """
 
     __abstract__ = True  # Empêche SQLAlchemy de créer une table pour BaseModel
 
     id = db.Column(
-    db.String(36),
-    primary_key=True,
-    default=lambda: str(uuid.uuid4())
+        db.String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4())
     )
 
     created_at = db.Column(
@@ -30,7 +31,9 @@ class BaseModel(db.Model):
     )
 
     def save(self):
-        """Add or update object in the database"""
+        """
+        Add or update object in the database
+        """
         try:
             db.session.add(self)
             db.session.commit()
@@ -39,7 +42,9 @@ class BaseModel(db.Model):
             raise
 
     def update(self, data):
-        """Update object attributes, then commit"""
+        """
+        Update object attributes, then commit
+        """
         PROTECTED = {"id", "created_at"}
 
         for key, value in data.items():
@@ -64,4 +69,7 @@ class BaseModel(db.Model):
             raise
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} {self.id}>"
+        return f"<{self.__class__.__name__} id={self.id}>"
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.id})"
