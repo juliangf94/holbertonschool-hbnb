@@ -17,7 +17,9 @@ from config import config  # Assure-toi que config.py est dans le même dossier 
 
 
 def create_app(config_name='development'):
-    """Create and configure the Flask application."""
+    """
+    Create and configure the Flask application.
+    """
     app = Flask(__name__)
 
     # Charger la configuration

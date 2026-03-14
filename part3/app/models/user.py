@@ -3,81 +3,34 @@ import re
 from app.extensions import db, bcrypt
 from app.models.base_model import BaseModel
 
+class User(BaseModel):
+    __tablename__ = 'users'  # Name of the table in the database
 
-class User(BaseModel, db.Model):
-    """
-    User model for storing user information.
-    """
-    __tablename__ = "users"
-
+    # Columns mapped to the database
     first_name = db.Column(db.String(50), nullable=False)
-    last_name = db.Column(db.String(50), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(128), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)
+    last_name  = db.Column(db.String(50), nullable=False)
+    email      = db.Column(db.String(120), nullable=False, unique=True)
+    password   = db.Column(db.String(128), nullable=False)
+    is_admin   = db.Column(db.Boolean, default=False)
 
-    def __init__(self, first_name, last_name, email, password, is_admin=False):
-        """
-        Initialize a new user with validation and password hashing.
-        """
-        super().__init__()
-
-        # .strip() pour rejeter les valeurs avec seulement des espaces
-        if not first_name or not first_name.strip() or len(first_name.strip()) > 50:
-            raise ValueError("first_name is required and cannot exceed 50 characters")
-        self.first_name = first_name.strip()
-
-        # Validate last_name
-        if not last_name or not last_name.strip() or len(last_name.strip()) > 50:
-            raise ValueError("last_name is required and cannot exceed 50 characters")
-        self.last_name = last_name.strip()
-
-        # Validate email
-        if not email or not re.match(r"[^@]+@[^@]+\.[^@]+", email.strip()):
-            raise ValueError("Invalid email format")
-        self.email = email.strip().lower()
-
-        # Validate password
-        if not password:
-            raise ValueError("Password is required")
-        self.set_password(password)
-
-        # Admin flag
-        self.is_admin = is_admin
-
-    def set_password(self, password):
-        """
-        Hash and store the password.
-        """
-        self.password = bcrypt.generate_password_hash(password).decode("utf-8")
+    def hash_password(self, password):
+        """Hashes the password before storing it."""
+        self.password = bcrypt.generate_password_hash(password).decode('utf-8')
 
     def verify_password(self, password):
-        """
-        Verify password during login.
-        """
-
-        """Verify password — utilisé dans login.py"""
-
+        """Verifies if the provided password matches the hashed password."""
         return bcrypt.check_password_hash(self.password, password)
 
     def update_profile(self, data):
-        """
-        Update user profile with validation and optional password hashing.
-        """
+        """Update user profile with validation"""
         if "first_name" in data:
-            if not data["first_name"] or not data["first_name"].strip() or len(data["first_name"].strip()) > 50:
-                raise ValueError("first_name is required and cannot exceed 50 characters")
-            self.first_name = data["first_name"].strip()
-
+            if not data["first_name"] or len(data["first_name"]) > 50:
+                raise ValueError("Invalid first_name")
         if "last_name" in data:
-            if not data["last_name"] or not data["last_name"].strip() or len(data["last_name"].strip()) > 50:
-                raise ValueError("last_name is required and cannot exceed 50 characters")
-            self.last_name = data["last_name"].strip()
-
+            if not data["last_name"] or len(data["last_name"]) > 50:
+                raise ValueError("Invalid last_name")
         if "email" in data:
-            if not data["email"] or not re.match(r"[^@]+@[^@]+\.[^@]+", data["email"].strip()):
-                raise ValueError("Invalid email format")
-            self.email = data["email"].strip().lower()
-
-        if "password" in data and data["password"]:
-            self.set_password(data["password"])
+            if not data["email"] or not re.match(r"[^@]+@[^@]+\.[^@]+", data["email"]):
+                raise ValueError("Invalid email")
+        # All validations passed, now apply the changes and update the timestamp
+        self.update(data)

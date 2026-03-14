@@ -1,117 +1,51 @@
 #!/usr/bin/python3
-from flask import request
-from flask_restx import Resource, Namespace, fields
-from flask_jwt_extended import jwt_required
-from app.services.facade import HBnBFacade
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from app.facade import Facade
 
-facade = HBnBFacade()
-api = Namespace("users", description="Users operations")
+users_bp = Blueprint('users', __name__)
 
-# Modèle pour Swagger / validation
-user_model = api.model(
-    "User", {
-        "first_name": fields.String(required=True, description="First name"),
-        "last_name": fields.String(required=True, description="Last name"),
-        "email": fields.String(required=True, description="User email"),
-        "password": fields.String(required=True, description="Password"),
-        "is_admin": fields.Boolean(description="Is admin")
-    }
-)
+# ---------------------- REGISTER ---------------------- #
+@users_bp.route('/', methods=['POST'])
+def register_user():
+    data = request.get_json()
+    try:
+        user = Facade.create_user(
+            first_name=data['first_name'],
+            last_name=data['last_name'],
+            email=data['email'],
+            password=data['password'],
+            is_admin=data.get('is_admin', False)
+        )
+        return jsonify({'id': user.id, 'email': user.email}), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
 
-# -------------------------
-# USERS COLLECTION
-# -------------------------
-@api.route("/")
-class UserList(Resource):
-    @api.marshal_list_with(user_model)
-    def get(self):
-        """
-        Get all 
-        """
-        users = facade.get_all_users()
-        return [{"first_name": u.first_name,
-                 "last_name": u.last_name,
-                 "email": u.email,
-                 "is_admin": u.is_admin} for u in users], 200
+# ---------------------- LOGIN ---------------------- #
+@users_bp.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    user = Facade.authenticate_user(data['email'], data['password'])
+    if not user:
+        return jsonify({'error': 'Invalid credentials'}), 401
+    access_token = create_access_token(identity=user.id)
+    return jsonify({'access_token': access_token}), 200
 
-    @api.expect(user_model, validate=True)
-    @api.response(201, "User created successfully")
-    @api.response(400, "Invalid input or email already registered")
-    def post(self):
-        """
-        Create a new user
-        """
-        data = request.get_json()
-        try:
-            user = facade.create_user(data)
-            return {"first_name": user.first_name,
-                    "last_name": user.last_name,
-                    "email": user.email,
-                    "is_admin": user.is_admin}, 201
-        except ValueError as e:
-            return {"message": str(e)}, 400
-
-
-# -------------------------
-# USER ITEM
-# -------------------------
-@api.route("/<string:user_id>")
-class UserResource(Resource):
-    @jwt_required()
-    @api.response(200, "User retrieved successfully")
-    @api.response(404, "User not found")
-    def get(self, user_id):
-        """
-        Get a single user by ID
-        """
-        user = facade.get_user(user_id)
-        if not user:
-            return {"message": "User not found"}, 404
-        return {"first_name": user.first_name,
-                "last_name": user.last_name,
-                "email": user.email,
-                "is_admin": user.is_admin}, 200
-
-    @jwt_required()
-    @api.expect(user_model, validate=True)
-    @api.response(200, "User updated successfully")
-    @api.response(400, "Invalid input or email already registered")
-    @api.response(404, "User not found")
-    def put(self, user_id):
-        """
-        Get user by ID
-        """
-        user_data = request.get_json()
-        try:
-            user = facade.update_user(user_id, user_data)
-            if not user:
-                return {"message": "User not found"}, 404
-            return {"first_name": user.first_name,
-                    "last_name": user.last_name,
-                    "email": user.email,
-                    "is_admin": user.is_admin}, 200
-        except ValueError as e:
-            return {"message": str(e)}, 400
-
-        """
-        Modifier un utilisateur (owner ou admin)
-        """
-        current_user = get_jwt_identity()
-        is_admin = current_user.get("is_admin", False)
-        requester_id = str(current_user.get("id"))
-
-        # Seul l'owner ou un admin peut modifier
-        if not is_admin and requester_id != user_id:
-            return {"error": "Unauthorized action"}, 403
-
-    @jwt_required()
-    @api.response(204, "User deleted successfully")
-    @api.response(404, "User not found")
-    def delete(self, user_id):
-        """
-        Delete a user by ID
-        """
-        success = facade.delete_user(user_id)
-        if not success:
-            return {"message": "User not found"}, 404
-        return "", 204
+# ---------------------- GET USER ---------------------- #
+@users_bp.route('/<int:user_id>', methods=['GET'])
+@jwt_required()
+def get_user(user_id):
+    current_user_id = get_jwt_identity()
+    user = Facade.get_user_by_id(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    # Les utilisateurs normaux ne peuvent voir que leurs infos
+    if current_user_id != user.id:
+        return jsonify({'error': 'Access forbidden'}), 403
+    return jsonify({
+        'id': user.id,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'email': user.email,
+        'is_admin': user.is_admin
+    })
