@@ -57,7 +57,9 @@ class AmenityDetail(Resource):
     @api.response(404, 'Amenity not found')
     @api.response(400, 'Invalid input data')
     def put(self, amenity_id):
-        """Mettre à jour une amenity (Admin only)"""
+        """
+        Mettre à jour une amenity (Admin only)
+        """
         data = api.payload
         try:
             updated_amenity = facade.update_amenity(amenity_id, data)

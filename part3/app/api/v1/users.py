@@ -25,7 +25,9 @@ user_model = api.model(
 class UserList(Resource):
     @api.marshal_list_with(user_model)
     def get(self):
-        """Get all users"""
+        """
+        Get all 
+        """
         users = facade.get_all_users()
         return [{"first_name": u.first_name,
                  "last_name": u.last_name,
@@ -36,7 +38,9 @@ class UserList(Resource):
     @api.response(201, "User created successfully")
     @api.response(400, "Invalid input or email already registered")
     def post(self):
-        """Create a new user"""
+        """
+        Create a new user
+        """
         data = request.get_json()
         try:
             user = facade.create_user(data)
@@ -57,7 +61,9 @@ class UserResource(Resource):
     @api.response(200, "User retrieved successfully")
     @api.response(404, "User not found")
     def get(self, user_id):
-        """Get a single user by ID"""
+        """
+        Get a single user by ID
+        """
         user = facade.get_user(user_id)
         if not user:
             return {"message": "User not found"}, 404
@@ -72,8 +78,9 @@ class UserResource(Resource):
     @api.response(400, "Invalid input or email already registered")
     @api.response(404, "User not found")
     def put(self, user_id):
-<<<<<<< HEAD
-        """Update a user by ID"""
+        """
+        Get user by ID
+        """
         user_data = request.get_json()
         try:
             user = facade.update_user(user_id, user_data)
@@ -85,8 +92,10 @@ class UserResource(Resource):
                     "is_admin": user.is_admin}, 200
         except ValueError as e:
             return {"message": str(e)}, 400
-=======
-        """Modifier un utilisateur (owner ou admin)"""
+
+        """
+        Modifier un utilisateur (owner ou admin)
+        """
         current_user = get_jwt_identity()
         is_admin = current_user.get("is_admin", False)
         requester_id = str(current_user.get("id"))
@@ -94,15 +103,15 @@ class UserResource(Resource):
         # Seul l'owner ou un admin peut modifier
         if not is_admin and requester_id != user_id:
             return {"error": "Unauthorized action"}, 403
->>>>>>> 03dc86d6cab1399d710e8a7b73fa167214ed08f1
 
     @jwt_required()
     @api.response(204, "User deleted successfully")
     @api.response(404, "User not found")
     def delete(self, user_id):
-        """Delete a user by ID"""
+        """
+        Delete a user by ID
+        """
         success = facade.delete_user(user_id)
         if not success:
             return {"message": "User not found"}, 404
         return "", 204
-    
