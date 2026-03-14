@@ -1,21 +1,25 @@
-# part3/app/facade.py
+#!/usr/bin/python3
 from app.models import db, User, Place, Review
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import IntegrityError
 
 
 class Facade:
-    """Facade pour gérer les opérations CRUD de l'application."""
+    """
+    Facade pour gérer les opérations CRUD de l'application.
+    """
 
     # ---------------------- USERS ---------------------- #
     @staticmethod
     def create_user(first_name, last_name, email, password, is_admin=False):
-        """Créer un utilisateur avec mot de passe haché."""
+        """
+        Créer un utilisateur avec mot de passe haché.
+        """
         hashed_password = generate_password_hash(password)
         user = User(
             first_name=first_name,
             last_name=last_name,
-            email=email,
+            email=email.lower(),
             password=hashed_password,
             is_admin=is_admin
         )
@@ -29,42 +33,44 @@ class Facade:
 
     @staticmethod
     def get_user_by_id(user_id):
-        """Récupérer un utilisateur par son ID."""
         return User.query.get(user_id)
 
     @staticmethod
     def get_user_by_email(email):
-        """Récupérer un utilisateur par son email."""
-        return User.query.filter_by(email=email).first()
+        return User.query.filter_by(email=email.lower()).first()
 
     @staticmethod
     def update_user(user_id, **kwargs):
-        """Mettre à jour les informations d'un utilisateur."""
         user = Facade.get_user_by_id(user_id)
         if not user:
             return None
-
         for key, value in kwargs.items():
             if key == "password":
                 setattr(user, key, generate_password_hash(value))
             elif hasattr(user, key):
                 setattr(user, key, value)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
         return user
 
     @staticmethod
     def delete_user(user_id):
-        """Supprimer un utilisateur."""
         user = Facade.get_user_by_id(user_id)
         if not user:
             return False
-        db.session.delete(user)
-        db.session.commit()
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
         return True
 
     @staticmethod
     def authenticate_user(email, password):
-        """Vérifie l'email et le mot de passe pour l'authentification."""
         user = Facade.get_user_by_email(email)
         if user and check_password_hash(user.password, password):
             return user
@@ -73,10 +79,13 @@ class Facade:
     # ---------------------- PLACES ---------------------- #
     @staticmethod
     def create_place(name, description, owner_id):
-        """Créer un lieu."""
         place = Place(name=name, description=description, owner_id=owner_id)
         db.session.add(place)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
         return place
 
     @staticmethod
@@ -91,7 +100,11 @@ class Facade:
         for key, value in kwargs.items():
             if hasattr(place, key):
                 setattr(place, key, value)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
         return place
 
     @staticmethod
@@ -99,8 +112,12 @@ class Facade:
         place = Facade.get_place_by_id(place_id)
         if not place:
             return False
-        db.session.delete(place)
-        db.session.commit()
+        try:
+            db.session.delete(place)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
         return True
 
     @staticmethod
@@ -110,15 +127,17 @@ class Facade:
     # ---------------------- REVIEWS ---------------------- #
     @staticmethod
     def create_review(user_id, place_id, text, rating):
-        """Créer un avis pour un lieu."""
-        # Optionnel : vérifier qu'un utilisateur ne peut pas reviewer plusieurs fois le même lieu
         existing_review = Review.query.filter_by(user_id=user_id, place_id=place_id).first()
         if existing_review:
             raise ValueError("Vous avez déjà publié un avis pour ce lieu.")
 
         review = Review(user_id=user_id, place_id=place_id, text=text, rating=rating)
         db.session.add(review)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
         return review
 
     @staticmethod
@@ -133,7 +152,11 @@ class Facade:
         for key, value in kwargs.items():
             if hasattr(review, key):
                 setattr(review, key, value)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
         return review
 
     @staticmethod
@@ -141,8 +164,12 @@ class Facade:
         review = Facade.get_review_by_id(review_id)
         if not review:
             return False
-        db.session.delete(review)
-        db.session.commit()
+        try:
+            db.session.delete(review)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
         return True
 
     @staticmethod
