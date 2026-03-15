@@ -16,9 +16,8 @@
 | Place → Review  | One-to-Many  |
 | Place ↔ Amenity | Many-to-Many |
 
-
 ```mermaid
-ER Diagram
+erDiagram
 
 USER {
     int id
@@ -59,8 +58,8 @@ PLACE_AMENITY {
 
 USER ||--o{ PLACE : owns
 USER ||--o{ REVIEW : writes
-PLACE ||--o{ REVIEW : has
+PLACE ||--o{ REVIEW : receives
 
-PLACE ||--o{ PLACE_AMENITY : contains
-AMENITY ||--o{ PLACE_AMENITY : includes
+PLACE ||--o{ PLACE_AMENITY : has
+AMENITY ||--o{ PLACE_AMENITY : included_in
 ```
