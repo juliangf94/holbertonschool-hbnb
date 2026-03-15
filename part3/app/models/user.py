@@ -13,11 +13,9 @@ class User(BaseModel, db.Model):
     password = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
 
-    """
-    - Relation avec les places et reviews (backref géré dans Place/Review)
-    - places = db.relationship('Place', backref='owner', lazy=True)
-    - reviews = db.relationship('Review', backref='user', lazy=True)
-    """
+    # Relationships
+    places = db.relationship('Place', backref='owner', lazy=True)
+    reviews = db.relationship('Review', backref='user', lazy=True)
 
     def __init__(self, first_name, last_name, email, password, is_admin=False, **kwargs):
         super().__init__(**kwargs)
