@@ -2821,8 +2821,22 @@ curl -X POST "http://127.0.0.1:5000/api/v1/auth/login" \
   -H "Content-Type: application/json" \
   -d '{"email": "admin@hbnb.com", "password": "admin1234"}'
 ```
-
-
+####  Creamos un usuario con el token de admin
+```bash
+curl -X POST "http://127.0.0.1:5000/api/v1/users/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc3MzQ5OTUzNSwianRpIjoiODExYjRkZDEtYjNmNC00MzQyLTk2Y2UtYTExMjIzZTgwZjFhIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImZhZjliMTM0LTc5N2EtNDQ5Zi1hOGQ5LWEzNjg1YzdlOTdmNCIsIm5iZiI6MTc3MzQ5OTUzNSwiY3NyZiI6IjYyOGI1OGZiLTkyNDUtNGY4Zi1hMWU2LWU4ODNiOGU3MzNlZiIsImV4cCI6MTc3MzUwMDQzNSwiaXNfYWRtaW4iOnRydWV9.9_Yv3b2kYrQiavov1e48cxYQ3ruVetWewcSoAJadnz4" \
+  -d '{"first_name": "John", "last_name": "Doe", "email": "john@example.com", "password": "password123"}'
+```
+**Output**
+```bash
+{
+    "id": "3b76c1fa-ef34-41ba-8ed7-b4305b8e94f2",
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john@example.com"
+}
+```
 ---
 
 ## Resumen de la arquitectura después del Task 6
@@ -2933,8 +2947,199 @@ Por eso aunque el hash sea diferente cada vez que lo generás (porque el salt es
 ---
 ---
 
-#   Task 7
+# Task 7 — Map Place, Review and Amenity Entities
+## Objetivo
 
+Mapear `Place`, `Review` y `Amenity` a tablas SQLAlchemy siguiendo el mismo patrón del Task 6 con `User`.
+
+| Archivo | Tabla |
+|---|---|
+| `place.py` | `places` |
+| `review.py` | `reviews` |
+| `amenity.py` | `amenities` |
+
+> **Importante:** No se agregan relaciones entre entidades todavía — eso se hace en el Task 8.
+
+---
+
+## Paso 1 — `app/models/place.py`
+```python
+#!/usr/bin/python3
+from app.extensions import db
+from app.models.base_model import BaseModel
+
+
+class Place(BaseModel):
+    __tablename__ = 'places'
+
+    # Columns mapped to the database
+    title       = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(500), nullable=True)
+    price       = db.Column(db.Float, nullable=False)
+    latitude    = db.Column(db.Float, nullable=False)
+    longitude   = db.Column(db.Float, nullable=False)
+    owner_id    = db.Column(db.String(36), nullable=False)
+
+    def add_review(self, review):
+        """Add a review to the place."""
+        pass  # will be implemented with relationships in Task 8
+
+    def add_amenity(self, amenity):
+        """Add an amenity to the place."""
+        pass  # will be implemented with relationships in Task 8
+
+    def update_details(self, data):
+        """Update place details with validation"""
+
+        if "title" in data:
+            if not data["title"] or len(data["title"]) > 100:
+                raise ValueError("Invalid title")
+
+        if "price" in data:
+            try:
+                data["price"] = float(data["price"])
+            except (ValueError, TypeError):
+                raise ValueError("Price must be a valid number")
+            if data["price"] <= 0:
+                raise ValueError("Price must be positive")
+
+        if "latitude" in data:
+            try:
+                data["latitude"] = float(data["latitude"])
+            except (ValueError, TypeError):
+                raise ValueError("Latitude must be a valid number")
+            if not (-90 <= data["latitude"] <= 90):
+                raise ValueError("Latitude must be between -90 and 90")
+
+        if "longitude" in data:
+            try:
+                data["longitude"] = float(data["longitude"])
+            except (ValueError, TypeError):
+                raise ValueError("Longitude must be a valid number")
+            if not (-180 <= data["longitude"] <= 180):
+                raise ValueError("Longitude must be between -180 and 180")
+        self.update(data)
+```
+
+### Columnas de `places`
+
+| Columna | Tipo | Restricción | Para qué sirve |
+|---|---|---|---|
+| `title` | String(100) | `nullable=False` | título obligatorio |
+| `description` | String(500) | `nullable=True` | descripción opcional |
+| `price` | Float | `nullable=False` | precio por noche |
+| `latitude` | Float | `nullable=False` | coordenada geográfica |
+| `longitude` | Float | `nullable=False` | coordenada geográfica |
+| `owner_id` | String(36) | `nullable=False` | UUID del dueño |
+
+### ¿Por qué `owner_id` es `String(36)` y no una relación?
+
+Guarda el UUID del usuario dueño como texto. La relación real (`User` → `Place`) se define en el Task 8 con `db.relationship()` y `db.ForeignKey()`.
+
+### ¿Qué se eliminó?
+
+- `__init__` — SQLAlchemy lo maneja automáticamente
+- `self.reviews = []` y `self.amenities = []` — se reemplazan con `db.relationship()` en Task 8
+- `add_review()` y `add_amenity()` quedan como `pass` por ahora
+
+---
+
+## Paso 2 — `app/models/review.py`
+```python
+#!/usr/bin/python3
+from app.extensions import db
+from app.models.base_model import BaseModel
+
+
+class Review(BaseModel):
+    __tablename__ = 'reviews'
+
+    # Columns mapped to the database
+    text     = db.Column(db.String(1000), nullable=False)
+    rating   = db.Column(db.Integer, nullable=False)
+    place_id = db.Column(db.String(36), nullable=False)
+    user_id  = db.Column(db.String(36), nullable=False)
+
+    def validate_rating(self, rating):
+        """Validates that rating is between 1 and 5"""
+        if not isinstance(rating, int) or not (1 <= rating <= 5):
+            raise ValueError("Rating must be an integer between 1 and 5")
+
+    def update_review(self, data):
+        """Update review with validation"""
+        if "text" in data:
+            if not data["text"] or not data["text"].strip():
+                raise ValueError("text is required")
+        if "rating" in data:
+            self.validate_rating(data["rating"])
+        self.update(data)
+```
+
+### Columnas de `reviews`
+
+| Columna | Tipo | Restricción | Para qué sirve |
+|---|---|---|---|
+| `text` | String(1000) | `nullable=False` | texto de la review |
+| `rating` | Integer | `nullable=False` | calificación 1-5 |
+| `place_id` | String(36) | `nullable=False` | UUID del lugar |
+| `user_id` | String(36) | `nullable=False` | UUID del autor |
+
+### ¿Qué se eliminó?
+
+- `__init__` — SQLAlchemy lo maneja automáticamente
+- Import de `User` y `Place` — no se necesitan sin relaciones
+- `self.place_id` y `self.user_id` son columnas de texto por ahora — las relaciones van en Task 8
+
+---
+
+## Paso 3 — `app/models/amenity.py`
+```python
+#!/usr/bin/python3
+from app.extensions import db
+from app.models.base_model import BaseModel
+
+
+class Amenity(BaseModel):
+    __tablename__ = 'amenities'
+
+    # Columns mapped to the database
+    name        = db.Column(db.String(50), nullable=False, unique=True)
+    description = db.Column(db.String(255), nullable=True)
+
+    def update_amenity(self, data):
+        """Update amenity with validation"""
+        if "name" in data:
+            if not data["name"] or not data["name"].strip():
+                raise ValueError("Amenity name cannot be empty")
+            if len(data["name"]) > 50:
+                raise ValueError("Amenity name cannot exceed 50 characters")
+        self.update(data)
+```
+
+### Columnas de `amenities`
+
+| Columna | Tipo | Restricción | Para qué sirve |
+|---|---|---|---|
+| `name` | String(50) | `nullable=False, unique=True` | nombre único de la amenity |
+| `description` | String(255) | `nullable=True` | descripción opcional |
+
+### ¿Qué se eliminó?
+
+- `__init__` — SQLAlchemy lo maneja automáticamente
+
+---
+
+## Resumen de tablas después del Task 7
+
+```
+development.db
+    ├── users      ← Task 6
+    ├── places     ← Task 7 ✅
+    ├── reviews    ← Task 7 ✅
+    └── amenities  ← Task 7 ✅
+```
+
+Las relaciones entre estas tablas (`ForeignKey`, `db.relationship`) se agregan en el Task 8.
 ---
 ---
 
