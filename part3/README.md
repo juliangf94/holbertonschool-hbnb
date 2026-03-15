@@ -19,6 +19,7 @@
 
 erDiagram
 
+```mermaid
 USER {
     int id
     string first_name
@@ -57,6 +58,7 @@ PLACE_AMENITY {
 }
 
 USER ||--o{ PLACE : owns
+```
 USER ||--o{ REVIEW : writes
 PLACE ||--o{ REVIEW : has
 
