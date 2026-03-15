@@ -17,9 +17,9 @@
 | Place ↔ Amenity | Many-to-Many |
 
 
-erDiagram
-
 ```mermaid
+ER Diagram
+
 USER {
     int id
     string first_name
@@ -58,9 +58,9 @@ PLACE_AMENITY {
 }
 
 USER ||--o{ PLACE : owns
-```
 USER ||--o{ REVIEW : writes
 PLACE ||--o{ REVIEW : has
 
 PLACE ||--o{ PLACE_AMENITY : contains
 AMENITY ||--o{ PLACE_AMENITY : includes
+```
