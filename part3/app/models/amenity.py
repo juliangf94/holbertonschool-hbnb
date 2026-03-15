@@ -6,7 +6,7 @@ from app.models.base_model import BaseModel
 class Amenity(BaseModel, db.Model):
     __tablename__ = "amenities"
 
-    id = db.Column(db.String(60), primary_key=True)
+    id = db.Column(db.String(36), primary_key=True)
     name = db.Column(db.String(50), nullable=False)
 
     def __init__(self, name, **kwargs):
