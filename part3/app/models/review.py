@@ -6,20 +6,29 @@ from app.models.base_model import BaseModel
 class Review(BaseModel, db.Model):
     __tablename__ = "reviews"
 
-    id = db.Column(db.String(60), primary_key=True)
+    id = db.Column(db.String(36), primary_key=True)
     text = db.Column(db.Text, nullable=False)
     rating = db.Column(db.Integer, nullable=False)
+
+    """
+    Foreign keys
+    """
+    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    place_id = db.Column(db.String(36), db.ForeignKey("places.id"), nullable=False)
 
     def __init__(self, text, rating, **kwargs):
         super().__init__(**kwargs)
 
-        # Validation du texte
+        """
+        Validation du texte
+        """
         if not text or not text.strip():
             raise ValueError("text is required")
 
-        # Validation de la note
-        self.validate_rating(rating)
-
+        """
+        Validation de la note
+        """
+        self.validate_rating(rating)         
         self.text = text.strip()
         self.rating = rating
 
