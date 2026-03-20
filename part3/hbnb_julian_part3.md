@@ -3878,6 +3878,118 @@ El orden de ejecución es siempre:
 ---
 ---
 
-#   Task 10
+# Task 10 — ER Diagram (Mermaid.js)
+
+## ¿Qué es un diagrama ER?
+
+Un diagrama ER (Entity-Relationship) representa visualmente la estructura de la base de datos — qué tablas existen, qué columnas tienen y cómo se relacionan entre sí.
+
+---
+
+## Diagrama completo
+
+```mermaid
+erDiagram
+    USER {
+        string id PK
+        string first_name
+        string last_name
+        string email
+        string password
+        boolean is_admin
+        datetime created_at
+        datetime updated_at
+    }
+
+    PLACE {
+        string id PK
+        string title
+        string description
+        float price
+        float latitude
+        float longitude
+        string owner_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    REVIEW {
+        string id PK
+        string text
+        int rating
+        string user_id FK
+        string place_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    AMENITY {
+        string id PK
+        string name
+        string description
+        datetime created_at
+        datetime updated_at
+    }
+
+    PLACE_AMENITY {
+        string place_id FK
+        string amenity_id FK
+    }
+
+    USER ||--o{ PLACE : "owns"
+    USER ||--o{ REVIEW : "writes"
+    PLACE ||--o{ REVIEW : "has"
+    PLACE ||--o{ PLACE_AMENITY : "contains"
+    AMENITY ||--o{ PLACE_AMENITY : "belongs to"
+```
+
+---
+
+## Entidades explicadas
+
+### `USER`
+Representa a los usuarios de la aplicación.
+- `id` — UUID único, clave primaria
+- `email` — único, no puede repetirse
+- `password` — hash bcrypt, nunca en texto plano
+- `is_admin` — rol del usuario
+
+### `PLACE`
+Representa los lugares publicados por los usuarios.
+- `owner_id` — FK que referencia `USER(id)` — indica quién es el dueño
+
+### `REVIEW`
+Representa las reseñas escritas por usuarios sobre lugares.
+- `user_id` — FK que referencia `USER(id)` — quién escribió la review
+- `place_id` — FK que referencia `PLACE(id)` — sobre qué lugar
+- Constraint único: `(user_id, place_id)` — un usuario solo puede reviewar un lugar una vez
+
+### `AMENITY`
+Catálogo global de comodidades (WiFi, Piscina, etc.). Solo admins pueden crearlas.
+
+### `PLACE_AMENITY`
+Tabla de asociación para la relación Many-to-Many entre `PLACE` y `AMENITY`.
+No tiene `id` propio — su clave primaria es la combinación `(place_id, amenity_id)`.
+
+---
+
+## Relaciones explicadas
+
+| Relación | Tipo | Descripción |
+|---|---|---|
+| `USER` → `PLACE` | One-to-Many | Un usuario puede tener muchos lugares |
+| `USER` → `REVIEW` | One-to-Many | Un usuario puede escribir muchas reviews |
+| `PLACE` → `REVIEW` | One-to-Many | Un lugar puede tener muchas reviews |
+| `PLACE` ↔ `AMENITY` | Many-to-Many | Un lugar tiene muchas amenities y viceversa |
+
+## Sintaxis Mermaid.js
+
+```
+||--o{   →  one-to-many
+||       →  exactamente uno (lado izquierdo)
+o{       →  cero o muchos (lado derecho)
+PK       →  Primary Key
+FK       →  Foreign Key
+```
 
 ---
