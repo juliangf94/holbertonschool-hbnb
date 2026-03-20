@@ -148,10 +148,14 @@ class TestPasswordHashing:
             assert 'password' not in user
 
     def test_hash_password_method(self, app):
-        """User.hash_password() stores bcrypt hash."""
         with app.app_context():
-            user = User.__new__(User)
-            user.password = ""
+            user = User(
+                first_name="Test",
+                last_name="Hash",
+                email="hashtest@test.com",
+                password="temp",
+                is_admin=False
+            )
             user.hash_password("testpass")
             assert user.password.startswith('$2b$')
 
