@@ -1,124 +1,119 @@
 #!/usr/bin/python3
-
 from flask_restx import Namespace, Resource, fields
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+# Import the shared facade instance to ensure a single in-memory data context.
+# Avoids creating multiple HBnBFacade instances with isolated state.
 from app.services import facade
 
+# Create the "users" namespace
 api = Namespace('users', description='User operations')
 
-# -------------------
-# Swagger Models
-# -------------------
-user_input_model = api.model('UserInput', {
-    'first_name': fields.String(required=True, description='First name'),
-    'last_name': fields.String(required=True, description='Last name'),
-    'email': fields.String(required=True, description='Email address'),
-    'password': fields.String(required=True, description='Password'),
-    'is_admin': fields.Boolean(description='Admin flag')
+# User model for input validation and Swagger documentation
+user_model = api.model('User', {
+    'first_name': fields.String(required=True, description='First name of the user'),
+    'last_name': fields.String(required=True, description='Last name of the user'),
+    'email': fields.String(required=True, description='Email of the user'),
+    'password': fields.String(required=True, description='Password of the user')
 })
 
-login_model = api.model('Login', {
-    'email': fields.String(required=True, description='User email'),
-    'password': fields.String(required=True, description='User password')
-})
-
-user_response_model = api.model('UserResponse', {
-    'id': fields.String(description='User ID'),
-    'first_name': fields.String(description='First name'),
-    'last_name': fields.String(description='Last name'),
-    'email': fields.String(description='Email'),
-    'is_admin': fields.Boolean(description='Admin flag')
-})
-
-token_model = api.model('Token', {
-    'access_token': fields.String(description='JWT access token')
-})
-
-# -------------------
-# User Registration
-# -------------------
+# ------------------- User List / Create -------------------
 @api.route('/')
-class UserRegister(Resource):
-
-    @api.expect(user_input_model, validate=True)
-    @api.response(201, 'User successfully created', user_response_model)
-    @api.response(400, 'Invalid input data')
+class UserList(Resource):
+    @jwt_required()
+    @api.expect(user_model, validate=True)
+    @api.response(201, 'User successfully created')
+    @api.response(400, 'Invalid input data or email already registered')
+    @api.response(403, 'Admin privileges required')
     def post(self):
-        """
-        Register a new user
-        """
-        data = api.payload
+        """Create a new user (admin only)"""            
+        claims = get_jwt()
+        if not claims.get('is_admin'):
+            return {'error': 'Admin privileges required'}, 403
+        user_data = api.payload
         try:
-            user = facade.create_user(
-                first_name=data['first_name'],
-                last_name=data['last_name'],
-                email=data['email'],
-                password=data['password'],
-                is_admin=data.get('is_admin', False)
-            )
+            # The facade checks for duplicates and raises ValueError if found
+            new_user = facade.create_user(user_data)
             return {
-                'id': user.id,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'email': user.email,
-                'is_admin': user.is_admin
+                'id': new_user.id,
+                'first_name': new_user.first_name,
+                'last_name': new_user.last_name,
+                'email': new_user.email
             }, 201
         except ValueError as e:
+            # We catch the error and return the 400 status code expected by Postman
             return {'error': str(e)}, 400
 
-# -------------------
-# User Login
-# -------------------
-@api.route('/login')
-class UserLogin(Resource):
+    @api.response(200, 'List of users retrieved successfully')
+    def get(self):
+        """Retrieve all users (public)"""
+        users = facade.get_all_users()
+        return [{
+            'id': user.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email
+        } for user in users], 200
 
-    @api.expect(login_model, validate=True)
-    @api.response(200, 'Login successful', token_model)
-    @api.response(401, 'Invalid credentials')
-    def post(self):
-        """
-        Authenticate user and return a JWT token
-        """
-        data = api.payload
-        user = facade.authenticate_user(data['email'], data['password'])
-        if not user:
-            return {'error': 'Invalid credentials'}, 401
-        access_token = create_access_token(
-            identity=str(user.id),
-            additional_claims={'is_admin': user.is_admin}
-        )
-        return {'access_token': access_token}, 200
-
-# -------------------
-# Get User Info
-# -------------------
+# ------------------- Retrieve / Update a single user -------------------
 @api.route('/<string:user_id>')
 class UserResource(Resource):
-
-    @jwt_required()
-    @api.response(200, 'User retrieved successfully', user_response_model)
-    @api.response(403, 'Access forbidden')
+    @api.response(200, 'User details retrieved successfully')
     @api.response(404, 'User not found')
     def get(self, user_id):
-        """
-        Retrieve user details (self only or admin)
-        """
-        current_user_id = get_jwt_identity()
-        claims = get_jwt()
-        is_admin = claims.get('is_admin', False)
-
-        user = facade.get_user_by_id(user_id)
+        """Retrieve a single user by ID"""
+        user = facade.get_user(user_id)
         if not user:
             return {'error': 'User not found'}, 404
-
-        # Normal users can see only their own info; admins can see any
-        if not is_admin and str(user.id) != str(current_user_id):
-            return {'error': 'Access forbidden'}, 403
-
         return {
             'id': user.id,
             'first_name': user.first_name,
             'last_name': user.last_name,
-            'email': user.email,
-            'is_admin': user.is_admin
+            'email': user.email
+        }, 200
+
+    @jwt_required()
+    @api.expect(user_model, validate=True)
+    @api.response(200, 'User updated successfully')
+    @api.response(400, 'Invalid input data or email already registered')
+    @api.response(403, 'Unauthorized action')
+    @api.response(404, 'User not found')
+    def put(self, user_id):
+        """Update own user details (authenticated users only)"""
+        claims = get_jwt()
+        is_admin = claims.get('is_admin', False)
+        current_user = get_jwt_identity()
+
+        # Non-admin can only modify their own data
+        if not is_admin and user_id != current_user:
+            return {'error': 'Unauthorized action'}, 403
+
+        user_data = api.payload
+
+        # Non-admin cannot modify email or password
+        if not is_admin and ('email' in user_data or 'password' in user_data):
+            return {'error': 'You cannot modify email or password'}, 400
+
+        # Admin: check email uniqueness if email is being changed
+        if is_admin and 'email' in user_data:
+            existing = facade.get_user_by_email(user_data['email'])
+            if existing and existing.id != user_id:
+                return {'error': 'Email already in use'}, 400
+
+        # We delegate the existence and email validation directly to the Facade
+        # Update the user
+        try:
+            updated_user = facade.update_user(user_id, user_data)
+            # If the facade returns None, the user doesn't exist
+            if not updated_user:
+                return {'error': 'User not found'}, 404
+        except ValueError as e:
+            
+            # The facade raises a ValueError if the email is taken
+            return {'error': str(e)}, 400
+
+        return {
+            'id': updated_user.id,
+            'first_name': updated_user.first_name,
+            'last_name': updated_user.last_name,
+            'email': updated_user.email
         }, 200
