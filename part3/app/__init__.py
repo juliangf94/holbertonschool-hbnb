@@ -2,8 +2,9 @@
 import os
 from flask import Flask
 from flask_restx import Api
-from app.extensions import db, bcrypt, jwt
+from flask_cors import CORS
 
+from app.extensions import db, bcrypt, jwt
 from app.api.v1.users import api as users_ns
 from app.api.v1.amenities import api as amenities_ns
 from app.api.v1.places import api as places_ns
@@ -28,7 +29,10 @@ def create_app(config_class=app_config.DevelopmentConfig):
     db_path = os.path.join(app.instance_path, 'development.db')
     # Override URI with absolute path for reliability
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
-    
+
+    # Enable CORS for all /api/* routes
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
+
     # Initialice the extensions
     bcrypt.init_app(app)
     jwt.init_app(app)
