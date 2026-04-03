@@ -2740,3 +2740,423 @@ first_name: Julian
 last_name: Gonzalez
 email: julian@example.com
 Password: password456
+
+
+---
+---
+
+# Mejoras y features adicionales implementadas
+
+## Arquitectura de archivos JS — Separación en módulos
+
+El `scripts.js` original fue dividido en archivos separados para mejor organización:
+
+| Archivo | Responsabilidad |
+|---|---|
+| `JS/common.js` | Utilidades compartidas: `setCookie`, `getCookie`, `isAuthenticated`, `checkAuthentication`, `getPlaceIdFromURL` |
+| `JS/index.js` | Lógica del home: `fetchPlaces`, `displayPlaces`, `filterPlaces` |
+| `JS/place.js` | Lógica del detalle: `fetchPlaceDetails`, `displayPlaceDetails`, lightbox |
+| `JS/login.js` | Lógica del login: `loginUser`, event listener del formulario |
+| `JS/add_review.js` | Lógica de reviews: `submitReview`, `handleReviewResponse` |
+
+Cada HTML carga `common.js` + su archivo específico:
+```html
+<script src="JS/common.js"></script>
+<script src="JS/index.js"></script>
+```
+
+---
+
+## Mejoras visuales en index.html
+
+### Cards con imagen y gradiente
+
+Las cards de lugares pasaron de ser solo texto a tener imagen, gradiente de color y precio destacado:
+
+```js
+const imgPosition = place.image_url && place.image_url.includes('Hogwarts') ? '50% 30%' : 'center';
+const imageContent = place.image_url
+    ? `<img src="${place.image_url}" alt="${place.title}" class="place-card-photo" style="object-position: ${imgPosition};">`
+    : `<span class="place-card-initial">${place.title.charAt(0).toUpperCase()}</span>`;
+
+card.innerHTML = `
+    <article class="place-card">
+        <div class="place-card-img">
+            ${imageContent}
+        </div>
+        <div class="place-card-body">
+            <h2>${place.title}</h2>
+            <p class="price-tag">$${place.price} <span>/ night</span></p>
+            <a href="place.html?id=${place.id}" class="details-button">View Details</a>
+        </div>
+    </article>
+`;
+```
+
+Las cards tienen un gradiente de color diferente según su índice (`card-gradient-0` a `card-gradient-3`) y se ordenan por precio de menor a mayor.
+
+### Filtro de precio como input libre
+
+En vez del `<select>` con opciones fijas, se usa un `<input type="text">` que permite al usuario escribir cualquier precio máximo:
+
+```html
+<input type="text" id="price-filter" placeholder="Any price" inputmode="numeric">
+```
+
+```js
+priceFilter.addEventListener('input', (event) => {
+    const val = event.target.value.trim();
+    filterPlaces(val === '' ? 'all' : val);
+});
+```
+
+El filtro se activa con el evento `input` (en tiempo real, mientras el usuario escribe). Para evitar que la página salte al inicio al escribir, se guarda y restaura la posición del scroll:
+
+```js
+function filterPlaces(maxPrice) {
+    const scrollY = window.scrollY;
+    // ... filtrar cards ...
+    window.scrollTo({ top: scrollY, behavior: 'instant' });
+}
+```
+
+---
+
+## Sistema de galería de imágenes (PlaceImage)
+
+### Modelo en el backend
+
+Se creó un nuevo modelo `PlaceImage` en `part3/app/models/place_image.py`:
+
+```python
+class PlaceImage(BaseModel):
+    __tablename__ = 'place_images'
+    place_id  = db.Column(db.String(36), db.ForeignKey('places.id'), nullable=False)
+    image_url = db.Column(db.String(500), nullable=False)
+```
+
+Se agregó la relación en el modelo `Place`:
+```python
+images = db.relationship('PlaceImage', backref='place', lazy=True, cascade='all, delete-orphan')
+```
+
+### Endpoints de la API
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/places/<id>/images` | Obtener todas las imágenes de un lugar (público) |
+| `POST` | `/places/<id>/images` | Agregar una imagen a un lugar (owner o admin) |
+| `DELETE` | `/places/<id>/images/<img_id>` | Eliminar una imagen (owner o admin) |
+
+### Facade — métodos nuevos
+
+```python
+def add_place_image(self, place_id, image_url):
+    img = PlaceImage(place_id=place_id, image_url=image_url)
+    db.session.add(img)
+    db.session.commit()
+    return img
+
+def get_place_images(self, place_id):
+    return PlaceImage.query.filter_by(place_id=place_id).all()
+
+def delete_place_image(self, image_id):
+    img = PlaceImage.query.get(image_id)
+    if img is None:
+        return False
+    db.session.delete(img)
+    db.session.commit()
+    return True
+```
+
+### Galería en el frontend
+
+En `place.js`, las imágenes se muestran en una grilla y la última imagen de la galería se usa como **hero** (imagen de cabecera grande):
+
+```js
+// La última imagen de la galería se usa como hero
+const heroUrl = (place.images && place.images.length > 0)
+    ? place.images[place.images.length - 1].image_url
+    : place.image_url;
+
+// Posicionamiento personalizado por imagen
+const heroPositions = {
+    'images/Rennes/3.webp': 'center 70%',
+    'images/Tatooine/2.webp': 'center 80%',
+    'images/Hogwarts/header.webp': 'center 60%',
+};
+```
+
+Las imágenes de la galería se crean dinámicamente:
+```js
+place.images.forEach(img => {
+    const image = document.createElement('img');
+    image.src = img.image_url;
+    image.className = 'gallery-img';
+    image.loading = 'lazy';
+    image.width = 400;
+    image.height = 300;
+    image.addEventListener('click', () => openLightbox(img.image_url));
+    // ...
+});
+```
+
+---
+
+## Lightbox
+
+Al hacer click en una imagen de la galería se abre un overlay con la imagen ampliada:
+
+```html
+<div id="lightbox" class="lightbox" style="display:none;">
+    <span id="lightbox-close" class="lightbox-close">&times;</span>
+    <img id="lightbox-img" class="lightbox-img" src="" alt="">
+</div>
+```
+
+```js
+function openLightbox(src) {
+    const lightbox = document.getElementById('lightbox');
+    document.getElementById('lightbox-img').src = src;
+    lightbox.style.display = 'flex';
+}
+
+function closeLightbox() {
+    document.getElementById('lightbox').style.display = 'none';
+    document.getElementById('lightbox-img').src = '';
+}
+```
+
+Se cierra haciendo click fuera de la imagen, en el botón `×`, o presionando `Escape`.
+
+---
+
+## Mejoras en las reviews
+
+### Resumen con promedio
+
+Antes de la lista de reviews se muestra el promedio de rating y la cantidad total:
+
+```js
+const avg = (place.reviews.reduce((sum, r) => sum + r.rating, 0) / place.reviews.length).toFixed(1);
+summary.innerHTML = `<span class="review-avg-stars">★</span> <strong>${avg}</strong> · ${place.reviews.length} review${place.reviews.length > 1 ? 's' : ''}`;
+```
+
+### Nombre real del usuario
+
+En vez de mostrar el UUID, se hace un fetch al endpoint de usuarios para obtener el nombre real. Todas las peticiones se hacen en paralelo con `Promise.all` para evitar que el layout salte mientras se cargan:
+
+```js
+const userNames = await Promise.all(sorted.map(async review => {
+    const userResponse = await fetch(`${API_URL}/users/${review.user_id}`);
+    if (userResponse.ok) {
+        const user = await userResponse.json();
+        return `${user.first_name} ${user.last_name}`;
+    }
+    return 'Anonymous';
+}));
+
+// Una vez que TODOS los nombres están listos, se renderizan todas las cards juntas
+const fragment = document.createDocumentFragment();
+sorted.forEach((review, i) => {
+    // crear card con userNames[i]...
+});
+reviewsSection.appendChild(fragment);
+```
+
+`document.createDocumentFragment()` agrupa todos los elementos antes de insertarlos en el DOM — evita que el layout salte múltiples veces.
+
+### Avatar con iniciales, fecha y separadores
+
+Cada review card muestra:
+- **Avatar** con las iniciales del usuario
+- **Nombre** del reviewer
+- **Fecha** formateada
+- **Estrellas** a la derecha
+
+```js
+const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+const date = review.created_at
+    ? new Date(review.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
+
+card.innerHTML = `
+    <div class="review-header">
+        <div class="reviewer-info">
+            <div class="reviewer-avatar">${initials}</div>
+            <div>
+                <span class="reviewer-name">${userName}</span>
+                ${date ? `<span class="review-date">${date}</span>` : ''}
+            </div>
+        </div>
+        <span class="stars">${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}</span>
+    </div>
+    <p class="review-text">${review.text}</p>
+`;
+```
+
+### Ordenamiento — más reciente primero
+
+```js
+const sorted = [...place.reviews].reverse();
+```
+
+---
+
+## Menú de usuario con nombre y logout
+
+Cuando el usuario está logueado, en vez del botón "Login" se muestra su nombre con un dropdown que incluye "Logout":
+
+En `common.js`:
+```js
+function checkAuthentication() {
+    const token = getCookie('token');
+    const loginLink = document.getElementById('login-link');
+    const userDropdown = document.getElementById('user-dropdown');
+    const userNameEl = document.getElementById('user-name');
+
+    if (token) {
+        if (loginLink) loginLink.style.display = 'none';
+        if (userDropdown) {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            // Fetch nombre del usuario
+            fetch(`${API_URL}/users/${payload.sub}`)
+                .then(r => r.json())
+                .then(user => {
+                    userNameEl.textContent = user.first_name + ' ' + user.last_name;
+                    userDropdown.style.display = 'block';
+                });
+        }
+    }
+    // Logout
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            window.location.href = 'index.html';
+        });
+    }
+}
+```
+
+---
+
+## Optimización de performance (Lighthouse)
+
+### Imágenes WebP
+
+Todas las imágenes fueron convertidas de JPG/PNG a formato **WebP** usando squoosh.app con los parámetros:
+- Formato: WebP
+- Ancho máximo: 1200px (800px para imágenes de galería pequeñas)
+- Calidad: 65
+
+| Carpeta | Imágenes |
+|---|---|
+| Paris/ | paris.webp, paris_kitchen.webp, 3.webp |
+| Hogwarts/ | 1-6.webp, header.webp |
+| Tatooine/ | 1-6.webp |
+| Rennes/ | 1-4.webp |
+| Buenos_Aires/ | 1-3.webp |
+| Bag End/ | 1-4.webp |
+| Raíz | header_3.webp |
+
+El hero del home se referencia desde el CSS:
+```css
+.hero-section {
+    background-image: url('../images/header_3.webp');
+}
+```
+
+### Lazy loading
+
+Las imágenes de galería tienen `loading="lazy"` para no cargarlas hasta que el usuario las necesita:
+```js
+image.loading = 'lazy';
+```
+
+### Dimensiones explícitas en imágenes
+
+Para evitar el **CLS** (Cumulative Layout Shift) se agregaron `width` y `height` explícitos a las imágenes:
+```js
+image.width = 400;
+image.height = 300;
+```
+
+Logo con dimensiones explícitas en todos los HTML:
+```html
+<img src="images/logo_option1.svg" alt="HBnB Logo" class="logo" width="120" height="40">
+```
+
+### Reserva de espacio para contenido dinámico
+
+Para evitar que el layout salte mientras JavaScript carga el contenido:
+```css
+.place-details {
+    min-height: 500px;
+}
+
+#place-gallery {
+    min-height: 260px;
+}
+
+#places-list {
+    min-height: 600px;
+}
+```
+
+### Bootstrap JS con defer
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+```
+
+`defer` hace que el script se descargue en paralelo con el HTML pero se ejecute después de que el DOM esté listo — no bloquea el renderizado.
+
+### Resultados Lighthouse
+
+| Página | Score Performance |
+|---|---|
+| index.html | ~79 |
+| place.html (Rennes) | ~75 |
+| place.html (Tatooine) | ~86 |
+| place.html (Buenos Aires) | ~83 |
+| place.html (Hogwarts) | ~75 |
+
+Los problemas restantes que no se pueden resolver con Live Server:
+- **Use efficient cache lifetimes** — el servidor de desarrollo no envía headers `Cache-Control`
+- **Render blocking requests** — Bootstrap CSS bloquea el renderizado inicial (inherente al uso del CDN)
+
+---
+
+## Lugares creados
+
+| Lugar | Precio | Coordenadas |
+|---|---|---|
+| Apartment in Paris | $10/noche | 48.8566, 2.3522 |
+| Loft in Buenos Aires | $30/noche | -34.6037, -58.3816 |
+| Cozy Studio in Rennes | $50/noche | 48.1173, -1.6778 |
+| Hogwarts School of Witchcraft and Wizardry | $100/noche | 57.2700, -4.5100 |
+| Apartment on Tatooine | $45/noche | 33.8869, 9.5375 |
+| Bag End | $60/noche | 51.8985, -1.7950 |
+
+## Amenities disponibles
+
+| Amenity | Icono |
+|---|---|
+| WiFi | 📶 |
+| Pool | 🏊 |
+| Kitchen | 🍳 |
+| Heating | 🔥 |
+| Pet Friendly | 🐾 |
+| Parking | 🚗 |
+| Air Conditioning | ❄️ |
+| Lake View | 🏞️ |
+| Private Garden | 🌿 |
+| Forest Access | 🌲 |
+| Train | 🚂 |
+| Quidditch Field | 🧹 |
+| Library | 📚 |
+| Desert View | 🏜️ |
+| Stargazing Deck | 🌌 |
+
