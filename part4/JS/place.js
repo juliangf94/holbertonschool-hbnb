@@ -90,6 +90,7 @@ function displayPlaceDetails(place) {
                 image.src = img.image_url;
                 image.alt = 'Place photo';
                 image.className = 'gallery-img';
+                image.loading = 'lazy';
                 image.style.cursor = 'zoom-in';
                 image.addEventListener('click', () => openLightbox(img.image_url));
                 item.appendChild(image);

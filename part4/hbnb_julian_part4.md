@@ -2529,21 +2529,7 @@ document.addEventListener('DOMContentLoaded', () => {
 ---
 ---
 
-# Run the app
-## Iniciar env
-```bash
-source .venv/bin/activate
-```
 
-```bash
-cd ~/holberton_projects/holbertonschool-hbnb/part3
-source .venv/bin/activate
-python3 run.py
-```
-
-```bash
-cd ~/holberton_projects/holbertonschool-hbnb/part4
-python3 -m http.server 5500
 ```
 
 # Crear admin
@@ -2596,7 +2582,7 @@ email: test@example.com
 password: password123
 
 
-
+---
 
 ## Julian
 ```bash
@@ -2611,6 +2597,8 @@ last_name: Gonzalez
 email: julian@example.com
 Password: password456
 
+
+---
 
 # Places
 ## Paris
@@ -2714,3 +2702,41 @@ curl -X POST http://127.0.0.1:5000/api/v1/places/35b6a8ee-eb8b-4432-86c4-d7f2d78
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc3NTE0NDE1MywianRpIjoiODMwYmI2NDktNGFjOS00NDExLWI0YmQtOGY1NWE4NGY5MDFhIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImVjZDkxYzVkLWU4YzctNDE0Yi1hOTI4LTQ2ZjIzOWMyZDI0YiIsIm5iZiI6MTc3NTE0NDE1MywiY3NyZiI6IjcyZWM2M2MyLWUxNTUtNDI4MC05NjZlLTJiZGE1MWRlMTE3NSIsImV4cCI6MTc3NTIzMDU1MywiaXNfYWRtaW4iOnRydWV9.s3KNQIv1_UUwfOuk-P4f0ztlz0GjDnSV2ZYit7mL9tY"
 ```
 
+---
+---
+
+
+# Run the app
+## Iniciar env en part3 y part4
+```bash
+source .venv/bin/activate
+```
+
+### Iniciar en part3
+```bash
+cd ~/holberton_projects/holbertonschool-hbnb/part3
+source .venv/bin/activate
+python3 run.py
+```
+
+```bash
+cd ~/holberton_projects/holbertonschool-hbnb/part4
+python3 -m http.server 5500
+```
+
+
+
+first_name: Admin
+last_name: User
+Email: admin@hbnb.io
+Password: admin1234
+
+first_name: Test
+last_name: User
+email: test@example.com
+password: password123
+
+first_name: Julian
+last_name: Gonzalez
+email: julian@example.com
+Password: password456
