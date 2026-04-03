@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HBnB - Home</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="CSS/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="hbnb-header">
+        <div class="container d-flex justify-content-between align-items-center py-3">
+            <!-- logo -->
+            <div class="logo-container">
+                <a href="index.html"><img src="images/logo_option1.svg" alt="HBnB Logo" class="logo"></a>
+            </div>
+            <!-- nav -->
+            <nav class="d-flex align-items-center gap-3">
+                <a href="index.html" class="nav-link-custom">Home</a>
+                <div class="dropdown" id="user-dropdown" style="display:none;">
+                    <span id="user-name" class="nav-user-name dropdown-toggle" data-bs-toggle="dropdown" role="button"></span>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" id="logout-btn">Logout</a></li>
+                    </ul>
+                </div>
+                <!-- Task 2: id="login-link" to show/hide based on authentication -->
+                <a id="login-link" href="login.html" class="btn btn-login login-button">Login</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero-section">
+        <div class="hero-overlay">
+            <h1 class="hero-title">Find your perfect place</h1>
+            <p class="hero-subtitle">Discover unique stays around the world</p>
+        </div>
+    </section>
+
+    <!-- Main -->
+    <main>
+        <!-- Filter -->
+        <div id="filter">
+            <label for="price-filter">Max Price:</label>
+            <input type="text" id="price-filter" placeholder="Any price" style="width: 140px;" inputmode="numeric">
+        </div>
+
+        <!-- Places list — Task 2: empty, filled dynamically by JavaScript -->
+        <div id="places-list" class="row">
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="hbnb-footer">
+    <div class="container text-center py-3">
+        <p class="mb-0">All rights reserved © 2026 HBnB</p>
+    </div>
+    </footer>
+
+    <!-- script -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="JS/common.js"></script>
+    <script src="JS/index.js"></script>
+</body>
+</html>

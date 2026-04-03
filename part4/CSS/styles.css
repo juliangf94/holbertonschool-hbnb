@@ -1,0 +1,608 @@
+/* =============================================
+   HBnB Part 4 — styles.css
+   Palette: Navy blue + Blue accent + Gold
+============================================= */
+
+:root {
+    --navy:      #1a2e4a;
+    --blue:      #2563eb;
+    --blue-hover:#1d4ed8;
+    --gold:      #f59e0b;
+    --bg:        #f8f9fa;
+    --white:     #ffffff;
+    --border:    #ddd;
+    --text:      #333;
+    --muted:     #6c757d;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #eef2f9;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    font-family: 'Segoe UI', sans-serif;
+    overflow-x: hidden;
+}
+
+/* ---- HEADER ---- */
+.hbnb-header {
+    background-color: var(--navy);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.logo {
+    height: 40px;
+    
+}
+
+.logo-container {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 5px 10px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.nav-link-custom {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.nav-link-custom:hover {
+    color: var(--gold);
+}
+
+.nav-user-name {
+    color: var(--gold);
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.nav-user-name::after {
+    border-top-color: var(--gold);
+}
+
+.dropdown-menu {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(26,46,74,0.12);
+}
+
+.dropdown-item {
+    color: var(--navy);
+    font-weight: 500;
+}
+
+.dropdown-item:hover {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.btn-login {
+    background-color: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.4rem 1rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    text-decoration: none;
+}
+
+.btn-login:hover {
+    background-color: var(--blue-hover);
+    color: #fff;
+}
+
+/* ---- CARDS (fixed params from task) ---- */
+.place-card,
+.review-card {
+    background: var(--white);
+    margin: 20px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+/* Extra polish for place cards */
+.place-card {
+    padding: 0;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 2px 12px rgba(26,46,74,0.10);
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.place-card:hover {
+    box-shadow: 0 8px 28px rgba(37,99,235,0.18);
+    transform: translateY(-4px);
+}
+
+/* Card image area */
+.place-card-img {
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.place-card-initial {
+    font-size: 5rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.2);
+    user-select: none;
+    line-height: 1;
+}
+
+.place-card-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Card body */
+.place-card-body {
+    padding: 12px 16px 16px;
+}
+
+.place-card-body h2 {
+    font-size: 1.15rem;
+    color: var(--navy);
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.price-tag {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 14px;
+}
+
+.price-tag strong,
+.price-tag {
+    font-weight: 400;
+}
+
+.price-tag::before {
+    content: '';
+}
+
+/* Card gradients */
+.card-gradient-0 .place-card-img { background: linear-gradient(135deg, #1a2e4a, #2563eb); }
+.card-gradient-1 .place-card-img { background: linear-gradient(135deg, #0f2044, #1d4ed8); }
+.card-gradient-2 .place-card-img { background: linear-gradient(135deg, #1a2e4a, #f59e0b); }
+.card-gradient-3 .place-card-img { background: linear-gradient(135deg, #162035, #2563eb 60%, #f59e0b); }
+
+/* ---- BUTTONS ---- */
+.details-button {
+    display: inline-block;
+    background-color: var(--navy);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.details-button:hover {
+    background-color: var(--gold);
+    color: var(--navy);
+}
+
+.btn-primary-custom {
+    background-color: var(--navy);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-primary-custom:hover {
+    background-color: var(--gold);
+    color: var(--navy);
+}
+
+/* ---- LOGIN BUTTON (class required by task) ---- */
+.login-button {
+    background-color: var(--gold);
+    color: var(--navy);
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.login-button:hover {
+    background-color: #d97706;
+    color: var(--navy);
+}
+
+/* ---- BACK BUTTONS (outline) ---- */
+.btn-outline-secondary {
+    border-color: var(--navy) !important;
+    color: var(--navy) !important;
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--navy) !important;
+    color: white !important;
+}
+
+/* ---- PLACE DETAILS ---- */
+.place-details {
+    background: var(--white);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+}
+
+/* Hero image */
+.place-hero {
+    width: 100%;
+    height: 350px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.place-title {
+    color: var(--navy);
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+}
+
+/* Two-column layout */
+.place-body-layout {
+    display: flex;
+    gap: 24px;
+    padding: 24px;
+    align-items: flex-start;
+}
+
+.place-thumb-col {
+    flex-shrink: 0;
+}
+
+.place-thumb {
+    width: 280px;
+    height: 280px;
+    object-fit: cover;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(26,46,74,0.15);
+}
+
+.place-info-col {
+    flex: 1;
+}
+
+.place-info h1 {
+    color: var(--navy);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.place-info .price-badge {
+    display: inline-block;
+    background-color: var(--navy);
+    color: white;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.amenity-badge {
+    display: inline-block;
+    background-color: #e8f0fe;
+    color: var(--blue);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    margin: 3px;
+    border: 1px solid #c7d7fd;
+}
+
+/* ---- GALLERY ---- */
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.gallery-item {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(26,46,74,0.10);
+    aspect-ratio: 4/3;
+}
+
+.gallery-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.2s;
+}
+
+.gallery-img:hover {
+    transform: scale(1.03);
+}
+
+/* ---- LIGHTBOX ---- */
+.lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    cursor: zoom-out;
+}
+
+.lightbox-img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 2.5rem;
+    color: #fff;
+    cursor: pointer;
+    line-height: 1;
+    user-select: none;
+}
+
+.lightbox-close:hover {
+    color: var(--gold);
+}
+
+/* ---- REVIEW SUMMARY ---- */
+.review-summary {
+    font-size: 1.1rem;
+    color: var(--navy);
+    margin-bottom: 16px;
+}
+
+.review-avg-stars {
+    color: var(--gold);
+    font-size: 1.2rem;
+}
+
+/* ---- REVIEWS ---- */
+.review-card {
+    padding: 20px 24px;
+    margin: 12px 0;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    box-shadow: 0 2px 8px rgba(26,46,74,0.06);
+    transition: box-shadow 0.2s;
+}
+
+.review-card:hover {
+    box-shadow: 0 4px 16px rgba(26,46,74,0.12);
+}
+
+.review-card + .review-card {
+    border-top: 1px solid var(--border);
+    margin-top: 12px;
+    border-radius: 12px;
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.reviewer-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.reviewer-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background-color: var(--navy);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.review-card .reviewer-name {
+    font-weight: 700;
+    color: var(--navy);
+    font-size: 1rem;
+    display: block;
+}
+
+.review-date {
+    font-size: 0.8rem;
+    color: var(--muted);
+    display: block;
+    margin-top: 1px;
+}
+
+.review-card .stars {
+    color: var(--gold);
+    font-size: 1.5rem;
+    letter-spacing: 3px;
+}
+
+.review-text {
+    color: var(--text);
+    line-height: 1.7;
+    margin: 0;
+    font-size: 0.95rem;
+    padding-left: 54px;
+}
+
+.review-card + .review-card {
+    border-top: 2px solid #f0f4ff;
+    margin-top: 12px;
+    border-radius: 12px;
+    padding-top: 20px;
+}
+
+/* ---- ADD REVIEW FORM ---- */
+.add-review {
+    padding: 28px;
+    margin: 0;
+}
+
+.add-review h2 {
+    color: var(--navy);
+    font-weight: 700;
+}
+
+/* Star rating */
+.star-rating {
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.star-rating input[type="radio"] {
+    display: none;
+}
+
+.star-label {
+    font-size: 2rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.star-rating input:checked ~ label,
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+    color: var(--gold);
+}
+
+/* ---- HERO ---- */
+.hero-section {
+    width: 100%;
+    height: 420px;
+    background-image: url('../images/header_3.jpg');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(26,46,74,0.7));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+}
+
+.hero-title {
+    color: #ffffff;
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    letter-spacing: -0.5px;
+}
+
+.hero-subtitle {
+    color: rgba(255,255,255,0.9);
+    font-size: 1.2rem;
+    font-weight: 400;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.4);
+}
+
+/* ---- PLACES LIST ---- */
+#places-list {
+    min-height: 600px;
+}
+
+/* ---- FILTER ---- */
+#filter {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#filter label {
+    font-weight: 600;
+    color: var(--navy);
+    white-space: nowrap;
+}
+
+#price-filter {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.95rem;
+    color: var(--text);
+}
+
+/* ---- FOOTER ---- */
+.hbnb-footer {
+    background-color: var(--navy);
+    color: #fff;
+    margin-top: auto;
+}
+
+.hbnb-footer p {
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+
+/* ---- LOGIN FORM ---- */
+#login-form {
+    max-width: 420px;
+    margin: 60px auto;
+    padding: 32px;
+}
+
+#login-form h2 {
+    color: var(--navy);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}

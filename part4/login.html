@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HBnB - Login</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="CSS/styles.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="hbnb-header">
+        <div class="container d-flex justify-content-between align-items-center py-3">
+            <div class="logo-container">
+                <a href="index.html"><img src="images/logo_option1.svg" alt="HBnB Logo" class="logo"></a>
+            </div>
+            <!-- nav -->
+            <nav class="d-flex align-items-center gap-3">
+                <a href="index.html" class="nav-link-custom">Home</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <main class="container">
+        <form id="login-form" class="review-card">
+            <h2>Login</h2>
+            <p class="text-muted mb-4">Welcome back! Please sign in to continue.</p>
+
+            <!-- Error message -->
+            <div id="login-error" class="alert alert-danger d-none"></div>
+
+            <!-- Email -->
+            <div class="mb-3">
+                <label for="email" class="form-label fw-semibold">Email</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    class="form-control"
+                    placeholder="you@example.com"
+                    required
+                >
+            </div>
+
+            <!-- Password -->
+            <div class="mb-4">
+                <label for="password" class="form-label fw-semibold">Password</label>
+                <div class="input-group">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-control"
+                        placeholder="Your password"
+                        required
+                    >
+                    <button type="button" class="btn btn-outline-secondary" id="toggle-password">
+                        👁
+                    </button>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="d-grid">
+                <button type="submit" class="login-button btn btn-lg">Login</button>
+            </div>
+        </form>
+    </main>
+
+    <!-- Footer -->
+    <footer class="hbnb-footer">
+        <div class="container text-center py-3">
+            <p class="mb-0">All rights reserved © 2026 HBnB</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="JS/common.js"></script>
+    <script src="JS/login.js"></script>
+</body>
+</html>
