@@ -3,9 +3,11 @@
 from app.models.user import User
 from app.models.amenity import Amenity
 from app.models.place import Place
+from app.models.place_image import PlaceImage
 from app.models.review import Review
 from app.persistence.repository import SQLAlchemyRepository
 from app.persistence.user_repository import UserRepository
+from app.extensions import db
 
 
 class HBnBFacade:
@@ -235,7 +237,7 @@ class HBnBFacade:
 
         # Updating fields
         updatable_fields = ['title', 'description', 'price', 'latitude',
-                            'longitude', 'amenities']
+                            'longitude', 'amenities', 'image_url']
 
         for field in updatable_fields:
             if field in place_data:
@@ -268,9 +270,51 @@ class HBnBFacade:
         place.update_details(place_data)
         return place
 
+    def add_amenity_to_place(self, place_id, amenity_id):
+        """
+        Add a specific amenity to a place.
+        """
+        place = self.place_repo.get(place_id)
+        if place is None:
+            raise ValueError("Place not found")
+
+        amenity = self.amenity_repo.get(amenity_id)
+        if amenity is None:
+            raise ValueError("Amenity not found")
+
+        # Append the amenity if it's not already in the list
+        if amenity not in place.amenities:
+            place.amenities.append(amenity)
+            db.session.commit()
+
+        return place
+
     # DELETE place
     def delete_place(self, place_id):
         return self.place_repo.delete(place_id)
+
+    # -------------------------
+    # PLACE IMAGES
+    # -------------------------
+    def add_place_image(self, place_id, image_url):
+        place = self.place_repo.get(place_id)
+        if place is None:
+            raise ValueError("Place not found")
+        img = PlaceImage(place_id=place_id, image_url=image_url)
+        db.session.add(img)
+        db.session.commit()
+        return img
+
+    def get_place_images(self, place_id):
+        return PlaceImage.query.filter_by(place_id=place_id).all()
+
+    def delete_place_image(self, image_id):
+        img = PlaceImage.query.get(image_id)
+        if img is None:
+            return False
+        db.session.delete(img)
+        db.session.commit()
+        return True
 
     # -------------------------
     # REVIEW CRUD

@@ -5,13 +5,13 @@ from app.services import facade
 
 api = Namespace('amenities', description='Amenity operations')
 
-# Modèle pour validation et Swagger
+# Model for validation and Swagger
 amenity_model = api.model('Amenity', {
     'name': fields.String(required=True, description='Name of the amenity')
 })
 
 
-# ------------------- Liste / Création -------------------
+# ------------------- List -------------------
 @api.route('/')
 class AmenityList(Resource):
     @jwt_required()
@@ -32,18 +32,18 @@ class AmenityList(Resource):
 
     @api.response(200, 'List of amenities retrieved successfully')
     def get(self):
-        """Lister toutes les amenities"""
+        """Retrieve a list of all amenities"""
         amenities = facade.get_all_amenities()
         return [{'id': a.id, 'name': a.name} for a in amenities], 200
 
 
-# ------------------- Détail / Mise à jour -------------------
+# ------------------- Details -------------------
 @api.route('/<string:amenity_id>')
 class AmenityResource(Resource):
     @api.response(200, 'Amenity details retrieved successfully')
     @api.response(404, 'Amenity not found')
     def get(self, amenity_id):
-        """Récupérer une amenity par ID (public)"""
+        """Retrieve an amenity by ID (public)"""
         amenity = facade.get_amenity(amenity_id)
         if not amenity:
             return {'error': 'Amenity not found'}, 404
