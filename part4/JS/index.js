@@ -39,7 +39,7 @@ function displayPlaces(places) {
 
         const imgPosition = place.image_url && place.image_url.includes('Hogwarts') ? '50% 30%' : 'center';
         const imageContent = place.image_url
-            ? `<img src="${place.image_url}" alt="${place.title}" class="place-card-photo" loading="lazy" style="object-position: ${imgPosition};">`
+            ? `<img src="${place.image_url}" alt="${place.title}" class="place-card-photo" style="object-position: ${imgPosition};">`
             : `<span class="place-card-initial">${place.title.charAt(0).toUpperCase()}</span>`;
 
         card.innerHTML = `

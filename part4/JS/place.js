@@ -19,7 +19,7 @@ async function fetchPlaceDetails(token, placeId) {
     }
 }
 
-function displayPlaceDetails(place) {
+async function displayPlaceDetails(place) {
     const placeInfo = document.querySelector('#place-details .place-info');
     const reviewsSection = document.getElementById('reviews');
     const token = getCookie('token');
@@ -41,9 +41,9 @@ function displayPlaceDetails(place) {
         : '<span class="text-muted">No amenities listed.</span>';
 
     const heroPositions = {
-        'images/Rennes/3.jpg': 'center 70%',
-        'images/Tatooine/2.jpg': 'center 80%',
-        'images/Hogwarts/header.jpg': 'center 60%',
+        'images/Rennes/3.webp': 'center 70%',
+        'images/Tatooine/2.webp': 'center 80%',
+        'images/Hogwarts/header.webp': 'center 60%',
     };
 
     const heroUrl = (place.images && place.images.length > 0)
@@ -55,7 +55,7 @@ function displayPlaceDetails(place) {
         : '';
 
     const thumbImg = place.image_url
-        ? `<img src="${place.image_url}" alt="${place.title}" class="place-thumb">`
+        ? `<img src="${place.image_url}" alt="${place.title}" class="place-thumb" width="280" height="280">`
         : '';
 
     placeInfo.innerHTML = `
@@ -91,6 +91,8 @@ function displayPlaceDetails(place) {
                 image.alt = 'Place photo';
                 image.className = 'gallery-img';
                 image.loading = 'lazy';
+                image.width = 400;
+                image.height = 300;
                 image.style.cursor = 'zoom-in';
                 image.addEventListener('click', () => openLightbox(img.image_url));
                 item.appendChild(image);
@@ -111,27 +113,28 @@ function displayPlaceDetails(place) {
             summary.innerHTML = `<span class="review-avg-stars">★</span> <strong>${avg}</strong> · ${place.reviews.length} review${place.reviews.length > 1 ? 's' : ''}`;
             reviewsSection.appendChild(summary);
 
-            // Sort newest first (by id as proxy, or just reverse)
+            // Sort newest first
             const sorted = [...place.reviews].reverse();
 
-            sorted.forEach(async review => {
-                const card = document.createElement('div');
-                card.classList.add('review-card');
-
-                let userName = 'Anonymous';
+            // Fetch all user names in parallel, then render all cards at once
+            const userNames = await Promise.all(sorted.map(async review => {
                 try {
                     const userResponse = await fetch(`${API_URL}/users/${review.user_id}`);
                     if (userResponse.ok) {
                         const user = await userResponse.json();
-                        userName = `${user.first_name} ${user.last_name}`;
+                        return `${user.first_name} ${user.last_name}`;
                     }
-                } catch (e) {
-                    console.error('Could not fetch user:', e);
-                }
+                } catch (e) { /* ignore */ }
+                return 'Anonymous';
+            }));
 
+            const fragment = document.createDocumentFragment();
+            sorted.forEach((review, i) => {
+                const userName = userNames[i];
                 const initials = userName === 'Anonymous' ? '?' : userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
                 const date = review.created_at ? new Date(review.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
-
+                const card = document.createElement('div');
+                card.className = 'review-card';
                 card.innerHTML = `
                     <div class="review-header">
                         <div class="reviewer-info">
@@ -145,8 +148,9 @@ function displayPlaceDetails(place) {
                     </div>
                     <p class="review-text">${review.text}</p>
                 `;
-                reviewsSection.appendChild(card);
+                fragment.appendChild(card);
             });
+            reviewsSection.appendChild(fragment);
         } else {
             const noReviews = document.createElement('p');
             noReviews.classList.add('text-muted');
