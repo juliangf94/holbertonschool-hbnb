@@ -102,8 +102,6 @@ python3 -m pytest app/tests/ -v
 
 ---
 
-## Authors
+## Author
 
-- **Julian** — App factory, RBAC, SQL scripts, ER diagrams, frontend
-- **Fabien** — JWT authentication, login endpoint
-- **Georgia** — SQLAlchemy repository, model mapping, relationships
+- **Julian Gonzalez** — [@juliangf94](https://github.com/juliangf94)
