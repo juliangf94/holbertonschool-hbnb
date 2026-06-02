@@ -82,6 +82,18 @@ Default admin credentials: `admin@hbnb.io` / `admin1234`
 
 ---
 
+## Screenshots
+
+| Home | Login |
+|---|---|
+| ![Home](Images/Home.png) | ![Login](Images/Log%20In.png) |
+
+| Place Details | Add Review |
+|---|---|
+| ![Place Details](Images/Place%20Details.png) | ![Review](Images/Review.png) |
+
+---
+
 ## Running Tests
 
 ```bash

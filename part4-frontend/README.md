@@ -112,6 +112,18 @@ When logged in, a review form appears on the place detail page. Submit it to POS
 
 ---
 
+## Screenshots
+
+| Home | Login |
+|---|---|
+| ![Home](../Images/Home.png) | ![Login](../Images/Log%20In.png) |
+
+| Place Details | Add Review |
+|---|---|
+| ![Place Details](../Images/Place%20Details.png) | ![Review](../Images/Review.png) |
+
+---
+
 ## Acknowledgments
 
 Part of the [HBnB Evolution](../README.md) project — Holberton School, 2025-2026.
