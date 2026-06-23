@@ -115,5 +115,6 @@ python3 -m pytest app/tests/ -v
 ---
 
 ## Author
-
+- **Fabien	Cousin** — [@cousinfabien](https://github.com/cousinfabien)
+- **Georgia	Boulnois** — [@Gigi-Corlay](https://github.com/Gigi-Corlay/Gigi-Corlay)
 - **Julian Gonzalez** — [@juliangf94](https://github.com/juliangf94)
