@@ -18,7 +18,7 @@
 ## Estructura del proyecto
 
 ```
-part3/
+part3-backend/
 ├── run.py                      # Punto de entrada — inicia el servidor
 ├── config.py                   # Configuraciones (dev, test, prod)
 ├── app/
@@ -40,11 +40,15 @@ part3/
 │   │   ├── places.py           # CRUD de lugares + imágenes + amenities
 │   │   ├── reviews.py          # CRUD de reviews
 │   │   └── amenities.py        # CRUD de amenities
-│   └── persistence/
-│       ├── repository.py       # Repository pattern (InMemory + SQLAlchemy)
-│       └── user_repository.py  # Repositorio específico de User
-└── tests/
-    └── test_endpoints.py       # Tests de integración con pytest
+│   ├── persistence/
+│   │   ├── repository.py       # Repository pattern (InMemory + SQLAlchemy)
+│   │   └── user_repository.py  # Repositorio específico de User
+│   └── tests/
+│       ├── test_models.py      # Tests de modelos
+│       └── test_part3.py       # Tests de integración con pytest
+└── scripts/
+    ├── create_tables.sql       # SQL para crear tablas manualmente
+    └── initial_data.sql        # SQL con datos iniciales
 ```
 
 ---
@@ -52,7 +56,7 @@ part3/
 ## Cómo iniciar la app
 
 ```bash
-cd ~/holberton_projects/holbertonschool-hbnb/part3
+cd ~/holberton_projects/holbertonschool-hbnb/part3-backend
 source .venv/bin/activate
 python3 run.py
 ```
@@ -143,7 +147,7 @@ Las instancias se crean **sin app** — están "vacías". Luego en `__init__.py`
 ---
 ---
 
-# \_\_init\_\_.py — Application Factory
+# `__init__.py` — Application Factory
 
 ```python
 def create_app(config_class=app_config.DevelopmentConfig):
@@ -267,7 +271,11 @@ __abstract__ = True
 Le dice a SQLAlchemy que **no cree una tabla** para `BaseModel`. Solo las clases hijas (`User`, `Place`, etc.) tendrán tablas propias. `BaseModel` existe solo para compartir columnas y métodos.
 
 ```python
-id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+id = db.Column(
+    db.String(36),
+    primary_key=True,
+    default=lambda: str(uuid.uuid4())
+)
 ```
 - `db.String(36)` — texto de hasta 36 caracteres (largo de un UUID: `"550e8400-e29b-41d4-a716-446655440000"`)
 - `primary_key=True` — identifica unívocamente cada fila de la tabla
@@ -420,6 +428,65 @@ class PlaceImage(BaseModel):
 ```
 
 Permite que un lugar tenga múltiples imágenes en una galería. La relación `cascade='all, delete-orphan'` en `Place` asegura que si se borra el lugar, se borran también todas sus imágenes.
+
+---
+
+## Amenity
+
+```python
+class Amenity(BaseModel):
+    __tablename__ = 'amenities'
+
+    name        = db.Column(db.String(50), nullable=False, unique=True)
+    description = db.Column(db.String(255), nullable=True)
+
+    def update_amenity(self, data):
+        if "name" in data:
+            if not data["name"] or not data["name"].strip():
+                raise ValueError("Amenity name cannot be empty")
+            if len(data["name"]) > 50:
+                raise ValueError("Amenity name cannot exceed 50 characters")
+        self.update(data)
+```
+
+### Columnas
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `name` | `String(50)` | `NOT NULL`, `UNIQUE` | Nombre de la amenity (WiFi, Pool, etc.) |
+| `description` | `String(255)` | nullable | Descripción opcional |
+
+```python
+unique=True
+```
+Garantiza que no pueden existir dos amenities con el mismo nombre — no tiene sentido tener dos "WiFi" en la base de datos.
+
+### `update_amenity()`
+
+```python
+def update_amenity(self, data):
+    if "name" in data:
+        if not data["name"] or not data["name"].strip():
+            raise ValueError("Amenity name cannot be empty")
+        if len(data["name"]) > 50:
+            raise ValueError("Amenity name cannot exceed 50 characters")
+    self.update(data)
+```
+
+Método propio de validación antes de delegar al `update()` del `BaseModel`.
+- `.strip()` elimina espacios — no se puede crear una amenity llamada `"   "` (solo espacios)
+- Valida que el nombre no exceda 50 caracteres antes de intentar guardarlo
+
+### Relación Many-to-Many con Place
+
+Las amenities se conectan a los lugares a través de la tabla intermedia `place_amenity` definida en `place.py`. Una amenity puede estar en muchos lugares y un lugar puede tener muchas amenities.
+
+```
+amenities        place_amenity       places
+----------       -------------       -------
+id=wifi    ←──  amenity_id=wifi     id=abc
+               place_id=abc    ──→
+```
 
 ---
 ---
@@ -718,6 +785,381 @@ def post(self):
 ---
 ---
 
+# Endpoints — CRUD completo
+
+Cada archivo en `app/api/v1/` define un `Namespace` de Flask-RESTX con sus rutas. Todos los endpoints devuelven JSON.
+
+---
+
+## users.py
+
+### `POST /api/v1/users/` — Crear usuario (solo admin)
+
+```python
+@jwt_required()
+def post(self):
+    claims = get_jwt()
+    if not claims.get('is_admin'):
+        return {'error': 'Admin privileges required'}, 403
+    user_data = api.payload
+    new_user = facade.create_user(user_data)
+    return {'id': ..., 'first_name': ..., 'last_name': ..., 'email': ...}, 201
+```
+
+| Campo | Detalle |
+|---|---|
+| Auth requerida | Sí — JWT de admin |
+| Body | `first_name`, `last_name`, `email`, `password` |
+| Éxito | `201` |
+| Errores | `400` email duplicado · `403` no es admin |
+
+```python
+if not claims.get('is_admin'):
+    return {'error': 'Admin privileges required'}, 403
+```
+`get_jwt()` lee los `additional_claims` del token — `is_admin` se guardó ahí en el login. Solo los admins pueden crear usuarios; los usuarios normales no pueden auto-registrarse.
+
+---
+
+### `GET /api/v1/users/` — Listar todos los usuarios (público)
+
+```python
+def get(self):
+    users = facade.get_all_users()
+    return [{'id': ..., 'first_name': ..., 'last_name': ..., 'email': ...} for user in users], 200
+```
+
+No requiere token. Devuelve la lista completa de usuarios sin la contraseña.
+
+---
+
+### `GET /api/v1/users/<user_id>` — Obtener un usuario (público)
+
+```python
+def get(self, user_id):
+    user = facade.get_user(user_id)
+    if not user:
+        return {'error': 'User not found'}, 404
+    return {'id': ..., 'first_name': ..., 'last_name': ..., 'email': ...}, 200
+```
+
+| Éxito | `200` con datos del usuario |
+|---|---|
+| Error | `404` si no existe |
+
+---
+
+### `PUT /api/v1/users/<user_id>` — Actualizar usuario
+
+```python
+@jwt_required()
+def put(self, user_id):
+    claims = get_jwt()
+    is_admin = claims.get('is_admin', False)
+    current_user = get_jwt_identity()
+
+    if not is_admin and user_id != current_user:
+        return {'error': 'Unauthorized action'}, 403
+
+    if not is_admin and ('email' in user_data or 'password' in user_data):
+        return {'error': 'You cannot modify email or password'}, 400
+```
+
+Reglas de negocio:
+- Usuario normal → solo puede modificar **su propio perfil**, y **no puede cambiar email ni password**
+- Admin → puede modificar cualquier usuario y cualquier campo
+- Si el admin cambia el email, se verifica que no esté en uso por otro usuario
+
+| Éxito | `200` |
+|---|---|
+| Errores | `403` no autorizado · `400` email duplicado · `404` no existe |
+
+---
+
+## amenities.py
+
+### `POST /api/v1/amenities/` — Crear amenity (solo admin)
+
+```python
+@jwt_required()
+def post(self):
+    claims = get_jwt()
+    if not claims.get('is_admin'):
+        return {'error': 'Admin privileges required'}, 403
+    amenity = facade.create_amenity(api.payload)
+    return {'id': amenity.id, 'name': amenity.name}, 201
+```
+
+| Body | `name` (requerido) |
+|---|---|
+| Auth | JWT de admin |
+| Éxito | `201` |
+| Errores | `400` nombre vacío o > 50 chars · `403` no es admin |
+
+---
+
+### `GET /api/v1/amenities/` — Listar amenities (público)
+
+```python
+def get(self):
+    amenities = facade.get_all_amenities()
+    return [{'id': a.id, 'name': a.name} for a in amenities], 200
+```
+
+---
+
+### `GET /api/v1/amenities/<amenity_id>` — Obtener amenity (público)
+
+Devuelve `{'id': ..., 'name': ...}` o `404` si no existe.
+
+---
+
+### `PUT /api/v1/amenities/<amenity_id>` — Actualizar amenity (solo admin)
+
+```python
+@jwt_required()
+def put(self, amenity_id):
+    claims = get_jwt()
+    if not claims.get('is_admin'):
+        return {'error': 'Admin privileges required'}, 403
+    updated = facade.update_amenity(amenity_id, api.payload)
+    return {'message': 'Amenity updated successfully', 'amenity': {'id': ..., 'name': ...}}, 200
+```
+
+La validación del nombre (no vacío, máximo 50 caracteres) la hace `Amenity.update_amenity()` antes de persistir.
+
+---
+
+## places.py
+
+### `POST /api/v1/places/` — Crear lugar (usuario autenticado)
+
+```python
+@jwt_required()
+def post(self):
+    current_user = get_jwt_identity()
+    place_data = request.json
+    place_data['owner_id'] = current_user  # se fuerza desde el token
+    place = facade.create_place(place_data)
+    return {'id': ..., 'title': ..., 'price': ..., 'owner_id': ...}, 201
+```
+
+| Body | `title`, `price`, `latitude`, `longitude` (requeridos) · `description`, `image_url` (opcionales) |
+|---|---|
+| Auth | JWT de cualquier usuario |
+| owner_id | Siempre se toma del token, ignorando lo que mande el body |
+| Éxito | `201` |
+| Errores | `400` validación fallida · `401` sin token |
+
+---
+
+### `GET /api/v1/places/` — Listar lugares (público)
+
+```python
+def get(self):
+    places = facade.get_all_places()
+    return [{
+        'id': ..., 'title': ..., 'price': ...,
+        'owner': {'id': ..., 'first_name': ..., 'last_name': ...},
+        'amenities': [{'id': ..., 'name': ...}],
+        'image_url': ...
+    } for p in places], 200
+```
+
+Devuelve una lista con info básica de cada lugar, incluyendo el owner y las amenities ya resueltos (no solo IDs).
+
+---
+
+### `GET /api/v1/places/<place_id>` — Detalle de un lugar (público)
+
+```python
+def get(self, place_id):
+    place = facade.get_place(place_id)
+    reviews = facade.get_reviews_by_place(place_id)
+    return {
+        'id': ..., 'title': ..., 'description': ..., 'price': ...,
+        'owner': {'id': ..., 'first_name': ..., 'last_name': ..., 'email': ...},
+        'amenities': [...],
+        'reviews': [{'id': ..., 'text': ..., 'rating': ..., 'user_id': ..., 'created_at': ...}],
+        'image_url': ...,
+        'images': [{'id': ..., 'image_url': ...}]   # galería completa
+    }, 200
+```
+
+Es el endpoint más completo — devuelve toda la información del lugar incluyendo owner, amenities, reviews con fecha, e imágenes de galería.
+
+---
+
+### `PUT /api/v1/places/<place_id>` — Actualizar lugar (owner o admin)
+
+```python
+@jwt_required()
+def put(self, place_id):
+    if not is_admin and place.owner_id != current_user:
+        return {'error': 'Unauthorized action'}, 403
+    updated_place = facade.update_place(place_id, request.json)
+    return {'id': ..., 'title': ..., ...}, 200
+```
+
+Solo el dueño del lugar o un admin pueden modificarlo.
+
+---
+
+### `POST /api/v1/places/<place_id>/amenities/<amenity_id>` — Agregar amenity a lugar
+
+```python
+@jwt_required()
+def post(self, place_id, amenity_id):
+    if not is_admin and place.owner_id != current_user:
+        return {'error': 'Unauthorized action'}, 403
+    facade.add_amenity_to_place(place_id, amenity_id)
+    return {'message': 'Amenity added successfully'}, 200
+```
+
+Conecta una amenity existente a un lugar existente en la tabla `place_amenity`. Solo el owner o admin pueden hacer esto.
+
+---
+
+### `GET /api/v1/places/<place_id>/reviews` — Reviews de un lugar (público)
+
+```python
+def get(self, place_id):
+    reviews = facade.get_reviews_by_place(place_id)
+    return [{'id': ..., 'text': ..., 'rating': ..., 'user_id': ...} for r in reviews], 200
+```
+
+---
+
+## reviews.py
+
+### `POST /api/v1/reviews/` — Crear review (usuario autenticado)
+
+```python
+@jwt_required()
+def post(self):
+    current_user = get_jwt_identity()
+    review_data['user_id'] = current_user  # se fuerza desde el token
+
+    place = facade.get_place(review_data['place_id'])
+    if place.owner_id == current_user:
+        return {'error': 'You cannot review your own place'}, 400
+
+    for review in existing_reviews:
+        if review.user_id == current_user:
+            return {'error': 'You have already reviewed this place'}, 400
+
+    r = facade.create_review(review_data)
+    return {'id': ..., 'text': ..., 'rating': ..., 'user_id': ..., 'place_id': ...}, 201
+```
+
+| Body | `text`, `rating` (1-5), `place_id` |
+|---|---|
+| Auth | JWT de cualquier usuario |
+| Reglas | No reviewar propio lugar · No reviewar el mismo lugar dos veces |
+| Éxito | `201` |
+| Errores | `400` reglas violadas · `404` lugar no existe |
+
+---
+
+### `GET /api/v1/reviews/` — Listar todas las reviews (público)
+
+Devuelve todas las reviews con `id`, `text`, `rating`, `user_id`, `place_id`.
+
+---
+
+### `GET /api/v1/reviews/<review_id>` — Obtener una review (público)
+
+Devuelve los datos de la review o `404` si no existe.
+
+---
+
+### `PUT /api/v1/reviews/<review_id>` — Actualizar review (author o admin)
+
+```python
+@jwt_required()
+def put(self, review_id):
+    if not is_admin and r.user_id != current_user:
+        return {'error': 'Unauthorized action'}, 403
+    updated = facade.update_review(review_id, request.json)
+    return {'id': ..., 'text': ..., 'rating': ..., 'user_id': ..., 'place_id': ...}, 200
+```
+
+Solo el autor de la review o un admin pueden modificarla.
+
+---
+
+### `DELETE /api/v1/reviews/<review_id>` — Eliminar review (author o admin)
+
+```python
+@jwt_required()
+def delete(self, review_id):
+    if not is_admin and success.user_id != current_user:
+        return {'error': 'Unauthorized action'}, 403
+    facade.delete_review(review_id)
+    return {'message': 'Review deleted successfully'}, 200
+```
+
+---
+---
+
+# Endpoints — Galería de imágenes (PlaceImage)
+
+Los endpoints de galería viven dentro de `places.py` porque una imagen pertenece a un lugar.
+
+### `GET /api/v1/places/<place_id>/images` — Obtener imágenes (público)
+
+```python
+def get(self, place_id):
+    images = facade.get_place_images(place_id)
+    return [{'id': img.id, 'image_url': img.image_url} for img in images], 200
+```
+
+Devuelve todas las imágenes de galería de un lugar. No requiere token.
+
+---
+
+### `POST /api/v1/places/<place_id>/images` — Agregar imagen (owner o admin)
+
+```python
+@jwt_required()
+def post(self, place_id):
+    if not is_admin and place.owner_id != current_user:
+        return {'error': 'Unauthorized action'}, 403
+    if not data.get('image_url'):
+        return {'error': 'image_url is required'}, 400
+    img = facade.add_place_image(place_id, data['image_url'])
+    return {'id': img.id, 'image_url': img.image_url}, 201
+```
+
+| Body | `image_url` (requerido) |
+|---|---|
+| Auth | JWT — owner del lugar o admin |
+| Éxito | `201` con `id` e `image_url` de la imagen creada |
+| Errores | `400` sin image_url · `403` no autorizado · `404` lugar no existe |
+
+La imagen se guarda en la tabla `place_images` vinculada al lugar por `place_id`.  
+El frontend usa la **última imagen** de la lista como imagen hero (cabecera) en `place.html`.
+
+---
+
+### `DELETE /api/v1/places/<place_id>/images/<image_id>` — Eliminar imagen (owner o admin)
+
+```python
+@jwt_required()
+def delete(self, place_id, image_id):
+    if not is_admin and place.owner_id != current_user:
+        return {'error': 'Unauthorized action'}, 403
+    deleted = facade.delete_place_image(image_id)
+    if not deleted:
+        return {'error': 'Image not found'}, 404
+    return {'message': 'Image deleted successfully'}, 200
+```
+
+`facade.delete_place_image()` busca la imagen por su `image_id`, la borra de la DB y devuelve `True`. Si no existe devuelve `False` y el endpoint responde `404`.
+
+---
+---
+
 # Diagrama de relaciones (ERD)
 
 ```
@@ -831,9 +1273,9 @@ Accedé a la documentación en: `http://127.0.0.1:5000/api/v1/`
 ## Cómo correr los tests
 
 ```bash
-cd ~/holberton_projects/holbertonschool-hbnb/part3
+cd ~/holberton_projects/holbertonschool-hbnb/part3-backend
 source .venv/bin/activate
-python3 -m pytest tests/ -v
+python3 -m pytest app/tests/ -v
 ```
 
 ## ¿Qué son los fixtures?
@@ -895,7 +1337,7 @@ def test_cannot_review_own_place(client, user_token, place_id):
 
 ## Iniciar el servidor
 ```bash
-cd ~/holberton_projects/holbertonschool-hbnb/part3
+cd ~/holberton_projects/holbertonschool-hbnb/part3-backend
 source .venv/bin/activate
 python3 run.py
 ```
@@ -927,9 +1369,9 @@ echo $TOKEN
 
 ## Verificar base de datos
 ```bash
-sqlite3 ~/holberton_projects/holbertonschool-hbnb/part3/instance/development.db "SELECT id, email, is_admin FROM users;"
-sqlite3 ~/holberton_projects/holbertonschool-hbnb/part3/instance/development.db "SELECT id, title, price FROM places;"
-sqlite3 ~/holberton_projects/holbertonschool-hbnb/part3/instance/development.db "SELECT id, name FROM amenities;"
+sqlite3 ~/holberton_projects/holbertonschool-hbnb/part3-backend/instance/development.db "SELECT id, email, is_admin FROM users;"
+sqlite3 ~/holberton_projects/holbertonschool-hbnb/part3-backend/instance/development.db "SELECT id, title, price FROM places;"
+sqlite3 ~/holberton_projects/holbertonschool-hbnb/part3-backend/instance/development.db "SELECT id, name FROM amenities;"
 ```
 
 ---
@@ -941,3 +1383,183 @@ sqlite3 ~/holberton_projects/holbertonschool-hbnb/part3/instance/development.db 
 | Admin | admin@hbnb.io | admin1234 | Admin |
 | Test User | test@example.com | password123 | Usuario |
 | Julian | julian@example.com | password456 | Usuario |
+
+---
+---
+
+# Preguntas de práctica
+
+## ¿Para qué se usa `db`?
+
+`db` es la instancia de SQLAlchemy definida en `extensions.py`. Tiene tres roles:
+
+**1. Definir tablas** — a través de los modelos
+```python
+class Review(db.Model):
+    text = db.Column(db.String(1000), nullable=False)
+```
+
+**2. Leer datos**
+```python
+db.session.get(Review, review_id)     # SELECT * FROM reviews WHERE id = ?
+Review.query.all()                     # SELECT * FROM reviews
+Review.query.filter_by(place_id=x)    # SELECT * FROM reviews WHERE place_id = ?
+```
+
+**3. Escribir datos**
+```python
+db.session.add(review)    # prepara el INSERT en memoria
+db.session.commit()       # ejecuta el SQL y guarda en disco
+db.session.delete(review) # prepara el DELETE
+```
+
+Sin el `commit()`, el objeto existe en Python pero nunca llega a la base de datos.
+
+---
+
+## ¿Para qué creamos `UserRepository`?
+
+`SQLAlchemyRepository` es genérico — sirve para cualquier modelo (`Place`, `Review`, `Amenity`). Tiene `get`, `get_all`, `add`, `delete`... pero no sabe buscar por email porque email es un concepto específico de `User`.
+
+`UserRepository` hereda todo el CRUD genérico y agrega solo lo que `User` necesita:
+
+```python
+class UserRepository(SQLAlchemyRepository):
+    def __init__(self):
+        super().__init__(User)  # le dice al padre "trabajá con la tabla users"
+
+    def get_user_by_email(self, email):
+        return self.model.query.filter_by(email=email).first()
+```
+
+Se usa en dos lugares críticos:
+- **Login** — verificar que el email existe antes de comparar la contraseña
+- **Crear usuario** — verificar que el email no esté ya registrado
+
+---
+
+## ¿Para qué usamos `get_jwt()` y `get_jwt_identity()`?
+
+Son dos funciones distintas que leen partes distintas del token JWT:
+
+```python
+current_user = get_jwt_identity()   # devuelve el identity → el ID del usuario
+claims       = get_jwt()            # devuelve TODOS los claims → incluye is_admin
+```
+
+`get_jwt_identity()` responde **¿quién es?** — devuelve el `str(user.id)` que se guardó al hacer login:
+```python
+# En auth.py al crear el token:
+create_access_token(identity=str(user.id), ...)
+
+# En places.py al usarlo:
+current_user = get_jwt_identity()        # "abc-123-uuid"
+place_data['owner_id'] = current_user    # fuerza el owner desde el token
+```
+
+`get_jwt()` responde **¿qué rol tiene?** — devuelve todos los additional_claims:
+```python
+# En auth.py al crear el token:
+create_access_token(additional_claims={"is_admin": user.is_admin}, ...)
+
+# En places.py al usarlo:
+claims   = get_jwt()
+is_admin = claims.get('is_admin', False)   # True o False
+
+if not is_admin and place.owner_id != current_user:
+    return {'error': 'Unauthorized action'}, 403
+```
+
+Resumen:
+
+| Función | ¿Qué devuelve? | ¿Para qué se usa? |
+|---|---|---|
+| `get_jwt_identity()` | ID del usuario | Saber quién hace la petición |
+| `get_jwt()` | Todos los claims | Verificar roles (`is_admin`) |
+
+---
+
+## ¿Para qué se usa `payload`?
+
+El payload es la **parte del medio** del token JWT (entre los dos puntos `.`), codificada en base64. Contiene los datos que se guardaron al crear el token:
+
+```
+eyJhbGciOiJIUzI1NiJ9  .  eyJzdWIiOiJ1c2VyMTIzIiwiaXNfYWRtaW4iOmZhbHNlfQ  .  SflKxwRJSMeKK...
+      header                              payload                                  signature
+```
+
+El payload decodificado contiene:
+```json
+{
+  "sub": "abc-123-uuid",
+  "is_admin": false,
+  "exp": 1234567890,
+  "iat": 1234567890
+}
+```
+
+En el **backend**, Flask-JWT lo decodifica automáticamente con `get_jwt_identity()` y `get_jwt()`.
+
+En el **frontend** (`common.js`), lo decodificamos manualmente para obtener el ID del usuario sin hacer una petición extra a la API:
+```js
+const payload = JSON.parse(atob(token.split('.')[1]));
+const currentUserId = payload.sub;   // "abc-123-uuid"
+```
+
+- `token.split('.')[1]` — toma la parte del medio
+- `atob()` — decodifica base64 a string
+- `JSON.parse()` — convierte el string a objeto JavaScript
+- `payload.sub` — el `sub` (subject) es donde JWT guarda el `identity` (el user.id)
+
+---
+---
+
+# Descripción concisa de cada archivo
+
+| Archivo | En una línea |
+|---|---|
+| `run.py` | Punto de entrada — crea la app con `create_app()` y arranca el servidor |
+| `config.py` | Define 3 configs: dev (SQLite en disco), test (SQLite en RAM), prod (MySQL + env vars) |
+| `extensions.py` | Crea `db`, `bcrypt` y `jwt` sin app — soluciona el problema de circular imports |
+| `app/__init__.py` | Application Factory — crea Flask, conecta extensiones, registra namespaces, crea tablas |
+| `models/base_model.py` | Padre de todos los modelos — UUID automático, `created_at`, `updated_at`, `update()` |
+| `models/user.py` | Tabla `users` — hasheo de contraseñas con bcrypt, relaciones a places y reviews |
+| `models/place.py` | Tabla `places` + tabla intermedia `place_amenity` para la relación Many-to-Many con amenities |
+| `models/review.py` | Tabla `reviews` — FK a `places.id` y `users.id` |
+| `models/amenity.py` | Tabla `amenities` — nombre único, validación de longitud |
+| `models/place_image.py` | Tabla `place_images` — galería de imágenes por lugar, se borra en cascada con el lugar |
+| `persistence/repository.py` | Repository Pattern — `SQLAlchemyRepository` con CRUD genérico para cualquier modelo |
+| `persistence/user_repository.py` | Extiende el repositorio genérico agregando `get_user_by_email()` |
+| `services/facade.py` | Capa de lógica de negocio — valida datos, coordina repositorios, aplica reglas |
+| `api/v1/auth.py` | Único endpoint de login — verifica credenciales y devuelve el token JWT |
+| `api/v1/users.py` | CRUD de usuarios — admin crea, cualquiera lee, usuario actualiza solo el suyo |
+| `api/v1/places.py` | CRUD de lugares + endpoints de galería de imágenes + agregar amenities |
+| `api/v1/reviews.py` | CRUD de reviews — con control de duplicados y ownership |
+| `api/v1/amenities.py` | CRUD de amenities — solo admin puede crear y actualizar |
+
+---
+---
+
+# Puntos clave para la presentación
+
+Estos son los conceptos que más preguntan — si los entendés bien, podés responder casi cualquier pregunta:
+
+**1. Application Factory** — `create_app()` existe para poder crear la app con distintas configs (dev, test). Sin esto, los tests no pueden usar una base de datos separada.
+
+**2. `extensions.py`** — `db`, `bcrypt` y `jwt` se crean sin app para evitar circular imports. Se "conectan" a la app después con `init_app(app)`.
+
+**3. JWT** — tiene 3 partes: header, payload (user_id + is_admin + expiración), signature. El servidor firma con `JWT_SECRET_KEY`. Si alguien modifica el payload, la firma no coincide y el token es rechazado.
+
+**4. `get_jwt_identity()`** responde quién es el usuario. **`get_jwt()`** responde qué rol tiene.
+
+**5. Repository Pattern** — la Facade no habla directamente con SQLAlchemy. Habla con el repositorio. Si mañana cambiamos de SQLite a PostgreSQL, solo cambia el repositorio, no la Facade ni los endpoints.
+
+**6. Ownership check** — el patrón que se repite en todos los endpoints protegidos:
+```python
+if not is_admin and resource.owner_id != current_user:
+    return {'error': 'Unauthorized action'}, 403
+```
+
+**7. `owner_id` siempre viene del token** — en `POST /places/` y `POST /reviews/`, aunque el usuario mande un `owner_id` en el body, siempre se sobreescribe con el ID del token. Evita suplantación de identidad.
+
+**8. bcrypt** — las contraseñas nunca se guardan en texto plano. Se hashean con `generate_password_hash()` y se verifican con `check_password_hash()`. El hash es irreversible.

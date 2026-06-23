@@ -25,16 +25,28 @@
 ## Estructura del proyecto
 
 ```
-part4/
+part4-frontend/
 ├── index.html          # Lista de lugares
 ├── login.html          # Formulario de login
 ├── place.html          # Detalle de un lugar
 ├── add_review.html     # Formulario para agregar una review
-├── styles.css          # Estilos globales
-├── scripts.js          # Lógica JavaScript
+├── CSS/
+│   └── styles.css      # Estilos globales
+├── JS/
+│   ├── common.js       # Utilidades compartidas (getCookie, checkAuthentication, etc.)
+│   ├── login.js        # Lógica del login
+│   ├── index.js        # Lógica del home (fetchPlaces, displayPlaces, filterPlaces)
+│   ├── place.js        # Lógica del detalle (fetchPlaceDetails, galería, lightbox)
+│   └── add_review.js   # Lógica de reviews (submitReview, handleReviewResponse)
 └── images/
-    └── logo.png        # Logo de la aplicación
+    └── logo_option1.svg  # Logo de la aplicación
 ```
+
+> **Nota sobre la arquitectura JS:** el enunciado original pedía un único `scripts.js`. En esta implementación se dividió en módulos separados por responsabilidad. Cada HTML carga `common.js` + su archivo específico:
+> ```html
+> <script src="JS/common.js"></script>
+> <script src="JS/index.js"></script>
+> ```
 
 ---
 ---
@@ -115,9 +127,13 @@ Importado via CDN — no requiere instalación:
 **Bootstrap** se usa para el grid (`container`, `row`, `col-md-*`), utilidades de espaciado (`d-flex`, `gap-3`, `mb-4`) y componentes base que luego se personalizan con `styles.css`.
 
 Las clases más importantes que usamos
+
+---
+
 Layout y espaciado:
+
 | Clase | Qué hace |
-| :... | :... |
+|---|---|
 | container | Centra el contenido con margen automático |
 | d-flex | Activa flexbox |
 | justify-content-between | Separa los elementos al máximo |
@@ -126,6 +142,8 @@ Layout y espaciado:
 | mb-4 | Margin bottom de 1.5rem |
 | py-3 | Padding arriba y abajo de 1rem |
 | mt-5, my-5 | Margin top / margin vertical |
+
+---
 
 Grid (sistema de columnas):
 ```html
@@ -137,7 +155,7 @@ Bootstrap divide la pantalla en 12 columnas — es responsivo automáticamente.
 
 Componentes:
 | Clase | Qué hace |
-| :... | :... |
+|---|---|
 | btn | Estilo base de botón |
 | btn-lg | Botón grande |
 | btn-outline-secondary | Botón con borde gris |
@@ -210,16 +228,17 @@ flask-cors
 ---
 
 ## Archivos modificados
-| Archivo | Cambio | 
-| :... | :... |
-| `scripts.js` | Lógica de login completa |
+| Archivo | Cambio |
+|---|---|
+| `JS/login.js` | Lógica de login completa |
+| `JS/common.js` | `setCookie`, `getCookie`, `isAuthenticated` compartidos |
 | `login.html` | Agregado `div` para mensajes de error |
-| `part3/app/__init__.py` | Agregado CORS |
-| `part3/requirements.txt` | Agregado `flask-cors` |
+| `part3-backend/app/__init__.py` | Agregado CORS |
+| `part3-backend/requirements.txt` | Agregado `flask-cors` |
 
+> El código de login vive en `JS/login.js`. Las utilidades compartidas (`setCookie`, `getCookie`) viven en `JS/common.js` y se cargan en todas las páginas.
 
-
-### `part3/app/__init__.py`
+### `part3-backend/app/__init__.py`
 ```python
 # Al inicio del archivo — en los imports:
 from flask_cors import CORS
@@ -232,86 +251,43 @@ Permite peticiones desde cualquier origen (`*`) para todas las rutas que empiece
 
 ---
 
-### `scripts.js`
+### `JS/common.js` — Utilidades compartidas
 ```js
-/* =============================================
-   HBnB Part 4 — scripts.js
-   Task 1: Login functionality
-============================================= */
-
 const API_URL = 'http://127.0.0.1:5000/api/v1';
 
-/* ---- UTILITIES ---- */
+function setCookie(name, value, days = 1) { ... }
+function getCookie(name) { ... }
+function isAuthenticated() { return getCookie('token') !== null; }
+function getPlaceIdFromURL() { ... }
+function checkAuthentication() { ... }
+```
 
-/**
- * Store JWT token in a cookie
- */
-function setCookie(name, value, days = 1) {
-    const expires = new Date();
-    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-    document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/`;
-}
-
-/**
- * Get a cookie value by name
- */
-function getCookie(name) {
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-        const [key, value] = cookie.trim().split('=');
-        if (key === name) return value;
-    }
-    return null;
-}
-
-/**
- * Check if user is authenticated (has token cookie)
- */
-function isAuthenticated() {
-    return getCookie('token') !== null;
-}
-
-/* ---- TASK 1: LOGIN ---- */
-
-/**
- * Send login request to API
- */
+### `JS/login.js` — Lógica del login
+```js
 async function loginUser(email, password) {
     const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
     });
     return response;
 }
 
-/* ---- EVENT LISTENERS ---- */
-
 document.addEventListener('DOMContentLoaded', () => {
-
-    /* --- Login Form --- */
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-
             const email    = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
             const errorMsg = document.getElementById('login-error');
-
             try {
                 const response = await loginUser(email, password);
-
                 if (response.ok) {
                     const data = await response.json();
-                    // Store JWT token in cookie (expires in 1 day)
                     setCookie('token', data.access_token, 1);
-                    // Redirect to main page
                     window.location.href = 'index.html';
                 } else {
-                    // Show error message
                     if (errorMsg) {
                         errorMsg.textContent = 'Invalid email or password. Please try again.';
                         errorMsg.classList.remove('d-none');
@@ -325,19 +301,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
 });
 ```
-#### Estructura general del archivo
+#### Estructura de archivos JS
 ```
-scripts.js
+JS/common.js
 ├── API_URL              → URL base de la API
 ├── setCookie()          → Guardar el token en el navegador
 ├── getCookie()          → Leer el token del navegador
-├── isAuthenticated()    → Verificar si hay sesión activa
+└── isAuthenticated()    → Verificar si hay sesión activa
+
+JS/login.js
 ├── loginUser()          → Hacer la petición HTTP a la API
-└── DOMContentLoaded     → Event listener principal del formulario
+└── DOMContentLoaded     → Event listener del formulario de login
 ```
+
+---
+
+### Explicación línea por línea — `JS/common.js`
 
 ####   Constante de la API
 ```js
@@ -467,6 +448,8 @@ getCookie('token') devuelve:
 ```
 
 ---
+
+### Explicación línea por línea — `JS/login.js`
 
 #### `loginUser()` — Petición HTTP a la API
 ```js
@@ -742,7 +725,8 @@ Redirige al usuario a la página principal.
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="scripts.js"></script>
+    <script src="JS/common.js"></script>
+    <script src="JS/login.js"></script>
 </body>
 </html>
 ```
@@ -769,7 +753,7 @@ Se agregó el div de error entre el título y el primer campo:
     Hacer un `GET` a `/api/v1/places/` y mostrar los lugares dinámicamente en el HTML con JavaScript
     No hardcodeados como el **"Sample Place"** actual.
 3. **Filtro por precio**
-    Un dropdown con opciones **10, 50, 100, All** que filtra los lugares sin recargar la página.
+    Un `input` de texto donde el usuario escribe un precio máximo y los lugares se filtran en tiempo real sin recargar la página.
 
 ## Objetivo
 Mostrar la lista de lugares dinámicamente desde la API, implementar filtro por precio y controlar la visibilidad del botón Login según si el usuario está autenticado.
@@ -777,8 +761,11 @@ Mostrar la lista de lugares dinámicamente desde la API, implementar filtro por 
 ## Archivos modificados
 | Archivo | Cambio |
 |---|---|
-| `index.html` | `id="login-link"` en el botón Login, opciones fijas en el dropdown, `#places-list` vacío |
-| `scripts.js` | 4 funciones nuevas: `checkAuthentication`, `fetchPlaces`, `displayPlaces`, `filterPlaces` |
+| `index.html` | `id="login-link"` en el botón Login, input de precio, `#places-list` vacío |
+| `JS/common.js` | `checkAuthentication` — controla login-link y llama a fetchPlaces |
+| `JS/index.js` | `fetchPlaces`, `displayPlaces`, `filterPlaces` |
+
+> El código de esta sección vive en `JS/index.js` (lógica del home) y `JS/common.js` (autenticación compartida).
 
 ---
 
@@ -789,16 +776,13 @@ Mostrar la lista de lugares dinámicamente desde la API, implementar filtro por 
 ```
 Agregamos el `id` para que JavaScript pueda encontrar este elemento y mostrarlo u ocultarlo según si hay token.
 
-### 2. Opciones fijas en el dropdown
+### 2. Input libre de precio
 ```html
-<select id="price-filter">
-    <option value="all">All</option>
-    <option value="10">$10</option>
-    <option value="50">$50</option>
-    <option value="100">$100</option>
-</select>
+<input type="text" id="price-filter" placeholder="Any price" inputmode="numeric">
 ```
-El enunciado pide exactamente estas opciones: 10, 50, 100, All.
+El enunciado pedía un `<select>` con opciones fijas (10, 50, 100, All). Se eligió un `input` libre para que el usuario pueda escribir cualquier valor máximo — más flexible que un dropdown con opciones predefinidas.
+
+`inputmode="numeric"` le indica al navegador que muestre el teclado numérico en móviles.
 
 ### 3. `#places-list` vacío con clase `row`
 ```html
@@ -810,8 +794,8 @@ La clase `row` de Bootstrap organiza las cards en columnas.
 
 ---
 
-## Funciones nuevas en `scripts.js`
-### `checkAuthentication()`
+## Funciones en `JS/common.js` y `JS/index.js`
+### `checkAuthentication()` — `JS/common.js`
 ```js
 function checkAuthentication() {
     const token = getCookie('token');
@@ -1172,8 +1156,13 @@ if (placesList) {
 
     const priceFilter = document.getElementById('price-filter');
     if (priceFilter) {
-        priceFilter.addEventListener('change', (event) => {
-            filterPlaces(event.target.value);
+        priceFilter.addEventListener('input', (event) => {
+            event.preventDefault();
+            const val = event.target.value.trim();
+            filterPlaces(val === '' ? 'all' : val);
+        });
+        priceFilter.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') event.preventDefault();
         });
     }
 }
@@ -1190,11 +1179,19 @@ checkAuthentication();
 Al cargar la página verifica el **token**, muestra/oculta el **Login** y carga los lugares.
 
 ```js
-priceFilter.addEventListener('change', (event) => {
-    filterPlaces(event.target.value);
+priceFilter.addEventListener('input', (event) => {
+    const val = event.target.value.trim();
+    filterPlaces(val === '' ? 'all' : val);
 });
 ```
-Cada vez que el usuario cambia el dropdown, llama a `filterPlaces` con el valor seleccionado (`"all"`, `"10"`, `"50"`, o `"100"`).
+Se usa el evento `input` (no `change`) — se activa en tiempo real mientras el usuario escribe, sin esperar a que salga del campo. Si el campo está vacío, muestra todos los lugares (`'all'`). Si tiene un número, filtra por ese precio máximo.
+
+```js
+priceFilter.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') event.preventDefault();
+});
+```
+Evita que al presionar Enter se recargue la página.
 
 
 ##   `placesList` en el event listener vs en `displayPlaces`
@@ -1243,7 +1240,7 @@ Si dependiera de una variable externa sería más frágil.
    - Limpia `#places-list`
    - Crea una **card** por cada lugar con `data-price`
    - Appends al **DOM**
-6. Usuario cambia el dropdown → `filterPlaces(maxPrice)`
+6. Usuario escribe un precio en el input → `filterPlaces(maxPrice)`
    - Muestra/oculta **cards** según `data-price`
 
 
@@ -1267,7 +1264,10 @@ Cuatro cosas:
 | Archivo | Cambio |
 |---|---|
 | `place.html` | `#place-details` y `#reviews` vacíos, se llenan dinámicamente |
-| `scripts.js` | 3 funciones nuevas: `getPlaceIdFromURL`, `fetchPlaceDetails`, `displayPlaceDetails` + update de `checkAuthentication` |
+| `JS/common.js` | `getPlaceIdFromURL`, update de `checkAuthentication` para manejar `place.html` |
+| `JS/place.js` | `fetchPlaceDetails`, `displayPlaceDetails`, galería, lightbox |
+
+> El código de esta sección vive en `JS/place.js` (lógica del detalle) y `JS/common.js` (utilidades compartidas).
 
 ---
 
@@ -1348,7 +1348,8 @@ Cuatro cosas:
     </footer>
     <!-- script -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="scripts.js"></script>
+    <script src="JS/common.js"></script>
+    <script src="JS/place.js"></script>
 </body>
 </html>
 ```
@@ -1362,7 +1363,7 @@ Cuatro cosas:
 
 ---
 
-## `scripts.js` — Funciones nuevas del Task 3
+## Funciones en `JS/common.js` y `JS/place.js`
 
 ### `getPlaceIdFromURL()`
 
@@ -1620,7 +1621,7 @@ reviewsSection.appendChild(card);
 
 ### Update de `checkAuthentication()` para `place.html`
 
-La función ya existe en `scripts.js` para `index.html`. Hay que actualizarla para que también maneje `place.html`:
+La función `checkAuthentication` vive en `JS/common.js` y es compartida por todas las páginas. Se actualiza para manejar también `place.html`:
 
 ```javascript
 function checkAuthentication() {
@@ -1691,245 +1692,9 @@ Detecta si estamos en `place.html` buscando `#place-details`. Si existe, llama a
 
 ---
 
-## `scripts.js` completo con Tasks 1, 2 y 3
+## Arquitectura de archivos JS (implementación final)
 
-```javascript
-const API_URL = 'http://127.0.0.1:5000/api/v1';
-
-/* ---- UTILITIES ---- */
-
-function setCookie(name, value, days = 1) {
-    const expires = new Date();
-    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-    document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/`;
-}
-
-function getCookie(name) {
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-        const [key, value] = cookie.trim().split('=');
-        if (key === name) return value;
-    }
-    return null;
-}
-
-function isAuthenticated() {
-    return getCookie('token') !== null;
-}
-
-/* ---- TASK 1: LOGIN ---- */
-
-async function loginUser(email, password) {
-    const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-    });
-    return response;
-}
-
-/* ---- TASK 2 & 3: CHECK AUTHENTICATION ---- */
-
-function checkAuthentication() {
-    const token = getCookie('token');
-    const loginLink = document.getElementById('login-link');
-    const addReviewSection = document.getElementById('add-review');
-
-    if (loginLink) {
-        loginLink.style.display = token ? 'none' : 'block';
-    }
-
-    if (addReviewSection) {
-        addReviewSection.style.display = token ? 'block' : 'none';
-    }
-
-    if (document.getElementById('places-list')) {
-        fetchPlaces(token);
-    }
-
-    const placeId = getPlaceIdFromURL();
-    if (placeId) {
-        fetchPlaceDetails(token, placeId);
-    }
-}
-
-/* ---- TASK 2: LIST OF PLACES ---- */
-
-async function fetchPlaces(token) {
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    try {
-        const response = await fetch(`${API_URL}/places/`, { headers });
-        if (response.ok) {
-            const places = await response.json();
-            window.allPlaces = places;
-            displayPlaces(places);
-        } else {
-            console.error('Failed to fetch places:', response.status);
-        }
-    } catch (error) {
-        console.error('Connection error:', error);
-    }
-}
-
-function displayPlaces(places) {
-    const placesList = document.getElementById('places-list');
-    if (!placesList) return;
-
-    placesList.innerHTML = '';
-
-    if (places.length === 0) {
-        placesList.innerHTML = '<p class="text-muted">No places found.</p>';
-        return;
-    }
-
-    places.forEach(place => {
-        const card = document.createElement('div');
-        card.classList.add('col-md-4');
-        card.dataset.price = place.price;
-        card.innerHTML = `
-            <article class="place-card">
-                <h2>${place.title}</h2>
-                <p>Price per night: <strong>$${place.price}</strong></p>
-                <a href="place.html?id=${place.id}" class="details-button">View Details</a>
-            </article>
-        `;
-        placesList.appendChild(card);
-    });
-}
-
-function filterPlaces(maxPrice) {
-    const cards = document.querySelectorAll('#places-list .col-md-4');
-    cards.forEach(card => {
-        const price = parseFloat(card.dataset.price);
-        card.style.display = (maxPrice === 'all' || price <= parseFloat(maxPrice)) ? 'block' : 'none';
-    });
-}
-
-/* ---- TASK 3: PLACE DETAILS ---- */
-
-function getPlaceIdFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('id');
-}
-
-async function fetchPlaceDetails(token, placeId) {
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    try {
-        const response = await fetch(`${API_URL}/places/${placeId}`, { headers });
-        if (response.ok) {
-            const place = await response.json();
-            displayPlaceDetails(place);
-        } else {
-            console.error('Failed to fetch place details:', response.status);
-        }
-    } catch (error) {
-        console.error('Connection error:', error);
-    }
-}
-
-function displayPlaceDetails(place) {
-    const placeInfo = document.querySelector('#place-details .place-info');
-    const reviewsSection = document.getElementById('reviews');
-
-    if (!placeInfo) return;
-
-    placeInfo.innerHTML = `
-        <h1>${place.title}</h1>
-        <p class="price-badge">$${place.price} / night</p>
-        <p><strong>Host:</strong> ${place.owner ? place.owner.first_name + ' ' + place.owner.last_name : 'N/A'}</p>
-        <p><strong>Description:</strong> ${place.description || 'No description available.'}</p>
-        <div class="mt-3">
-            <strong>Amenities:</strong>
-            <div class="mt-2">
-                ${place.amenities && place.amenities.length > 0
-                    ? place.amenities.map(a => `<span class="amenity-badge">${a.name}</span>`).join('')
-                    : '<span class="text-muted">No amenities listed.</span>'
-                }
-            </div>
-        </div>
-    `;
-
-    if (reviewsSection) {
-        reviewsSection.querySelectorAll('.review-card').forEach(card => card.remove());
-
-        if (place.reviews && place.reviews.length > 0) {
-            place.reviews.forEach(review => {
-                const card = document.createElement('div');
-                card.classList.add('review-card');
-                card.innerHTML = `
-                    <p class="reviewer-name">${review.user_id}</p>
-                    <p class="stars">${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}</p>
-                    <p>${review.text}</p>
-                `;
-                reviewsSection.appendChild(card);
-            });
-        } else {
-            const noReviews = document.createElement('p');
-            noReviews.classList.add('text-muted');
-            noReviews.textContent = 'No reviews yet. Be the first to review!';
-            reviewsSection.appendChild(noReviews);
-        }
-    }
-}
-
-/* ---- EVENT LISTENERS ---- */
-
-document.addEventListener('DOMContentLoaded', () => {
-
-    /* --- Login Form (Task 1) --- */
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const email    = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const errorMsg = document.getElementById('login-error');
-
-            try {
-                const response = await loginUser(email, password);
-                if (response.ok) {
-                    const data = await response.json();
-                    setCookie('token', data.access_token, 1);
-                    window.location.href = 'index.html';
-                } else {
-                    if (errorMsg) {
-                        errorMsg.textContent = 'Invalid email or password. Please try again.';
-                        errorMsg.classList.remove('d-none');
-                    }
-                }
-            } catch (error) {
-                if (errorMsg) {
-                    errorMsg.textContent = 'Connection error. Make sure the API is running.';
-                    errorMsg.classList.remove('d-none');
-                }
-            }
-        });
-    }
-
-    /* --- Index Page (Task 2) --- */
-    const placesList = document.getElementById('places-list');
-    if (placesList) {
-        checkAuthentication();
-        const priceFilter = document.getElementById('price-filter');
-        if (priceFilter) {
-            priceFilter.addEventListener('change', (event) => {
-                filterPlaces(event.target.value);
-            });
-        }
-    }
-
-    /* --- Place Details Page (Task 3) --- */
-    const placeDetails = document.getElementById('place-details');
-    if (placeDetails) {
-        checkAuthentication();
-    }
-
-});
-```
+> En la implementación final el `scripts.js` monolítico fue dividido en módulos. Ver la sección **"Mejoras y features adicionales"** para el detalle completo de la separación.
 
 ---
 
@@ -1973,8 +1738,11 @@ Cuatro cosas:
 
 | Archivo | Cambio |
 |---|---|
-| `add_review.html` | Agregar `?id=` al link "Back to Place" dinámicamente |
-| `scripts.js` | 2 funciones nuevas: `submitReview`, `handleReviewResponse` + event listener para `add_review.html` |
+| `add_review.html` | Link "Back to Place" actualizado dinámicamente con el `?id=` del lugar |
+| `JS/add_review.js` | `submitReview`, `handleReviewResponse`, event listener del formulario |
+| `JS/common.js` | `checkAuthentication` redirige si no hay token |
+
+> El código de esta sección vive en `JS/add_review.js`.
 
 ---
 
@@ -1985,7 +1753,7 @@ Eso lo maneja JavaScript en el event listener.
 
 ---
 
-## Funciones nuevas en `scripts.js`
+## Funciones en `JS/add_review.js`
 
 ### `submitReview(token, placeId, reviewText, rating)`
 
@@ -2192,314 +1960,7 @@ Envía la review y maneja la respuesta.
 
 ---
 
-## `scripts.js` completo — Tasks 1, 2, 3 y 4
-
-```javascript
-const API_URL = 'http://127.0.0.1:5000/api/v1';
-
-/* ---- UTILITIES ---- */
-
-function setCookie(name, value, days = 1) {
-    const expires = new Date();
-    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-    document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
-}
-
-function getCookie(name) {
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-        const [key, value] = cookie.trim().split('=');
-        if (key === name) return value;
-    }
-    return null;
-}
-
-function isAuthenticated() {
-    return getCookie('token') !== null;
-}
-
-/* ---- TASK 1: LOGIN ---- */
-
-async function loginUser(email, password) {
-    const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-    });
-    return response;
-}
-
-/* ---- TASK 2 & 3: CHECK AUTHENTICATION ---- */
-
-function checkAuthentication() {
-    const token = getCookie('token');
-    const loginLink = document.getElementById('login-link');
-    const addReviewSection = document.getElementById('add-review');
-
-    if (loginLink) {
-        loginLink.style.display = token ? 'none' : 'block';
-    }
-    if (addReviewSection) {
-        addReviewSection.style.display = token ? 'block' : 'none';
-    }
-    if (document.getElementById('places-list')) {
-        fetchPlaces(token);
-    }
-    const placeId = getPlaceIdFromURL();
-    if (placeId && document.getElementById('place-details')) {
-        fetchPlaceDetails(token, placeId);
-    }
-}
-
-/* ---- TASK 2: LIST OF PLACES ---- */
-
-async function fetchPlaces(token) {
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    try {
-        const response = await fetch(`${API_URL}/places/`, { headers });
-        if (response.ok) {
-            const places = await response.json();
-            window.allPlaces = places;
-            displayPlaces(places);
-        } else {
-            console.error('Failed to fetch places:', response.status);
-        }
-    } catch (error) {
-        console.error('Connection error:', error);
-    }
-}
-
-function displayPlaces(places) {
-    const placesList = document.getElementById('places-list');
-    if (!placesList) return;
-
-    placesList.innerHTML = '';
-
-    if (places.length === 0) {
-        placesList.innerHTML = '<p class="text-muted">No places found.</p>';
-        return;
-    }
-
-    places.forEach(place => {
-        const card = document.createElement('div');
-        card.classList.add('col-md-4');
-        card.dataset.price = place.price;
-        card.innerHTML = `
-            <article class="place-card">
-                <h2>${place.title}</h2>
-                <p>Price per night: <strong>$${place.price}</strong></p>
-                <a href="place.html?id=${place.id}" class="details-button">View Details</a>
-            </article>
-        `;
-        placesList.appendChild(card);
-    });
-}
-
-function filterPlaces(maxPrice) {
-    const cards = document.querySelectorAll('#places-list .col-md-4');
-    const limit = maxPrice === 'all' ? Infinity : parseFloat(maxPrice);
-    cards.forEach(card => {
-        const price = parseFloat(card.dataset.price);
-        card.style.display = (price <= limit) ? 'block' : 'none';
-    });
-}
-
-/* ---- TASK 3: PLACE DETAILS ---- */
-
-function getPlaceIdFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('id');
-}
-
-async function fetchPlaceDetails(token, placeId) {
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    try {
-        const response = await fetch(`${API_URL}/places/${placeId}`, { headers });
-        if (response.ok) {
-            const place = await response.json();
-            displayPlaceDetails(place);
-        } else {
-            console.error('Failed to fetch place details:', response.status);
-        }
-    } catch (error) {
-        console.error('Connection error:', error);
-    }
-}
-
-function displayPlaceDetails(place) {
-    const placeInfo = document.querySelector('#place-details .place-info');
-    const reviewsSection = document.getElementById('reviews');
-
-    if (!placeInfo) return;
-
-    placeInfo.innerHTML = `
-        <h1>${place.title}</h1>
-        <p class="price-badge">$${place.price} / night</p>
-        <p><strong>Host:</strong> ${place.owner ? place.owner.first_name + ' ' + place.owner.last_name : 'N/A'}</p>
-        <p><strong>Description:</strong> ${place.description || 'No description available.'}</p>
-        <div class="mt-3">
-            <strong>Amenities:</strong>
-            <div class="mt-2">
-                ${place.amenities && place.amenities.length > 0
-                    ? place.amenities.map(a => `<span class="amenity-badge">${a.name}</span>`).join('')
-                    : '<span class="text-muted">No amenities listed.</span>'
-                }
-            </div>
-        </div>
-    `;
-
-    if (reviewsSection) {
-        reviewsSection.querySelectorAll('.review-card').forEach(card => card.remove());
-
-        if (place.reviews && place.reviews.length > 0) {
-            place.reviews.forEach(review => {
-                const card = document.createElement('div');
-                card.classList.add('review-card');
-                card.innerHTML = `
-                    <p class="reviewer-name">${review.user_id}</p>
-                    <p class="stars">${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}</p>
-                    <p>${review.text}</p>
-                `;
-                reviewsSection.appendChild(card);
-            });
-        } else {
-            const noReviews = document.createElement('p');
-            noReviews.classList.add('text-muted');
-            noReviews.textContent = 'No reviews yet. Be the first to review!';
-            reviewsSection.appendChild(noReviews);
-        }
-    }
-}
-
-/* ---- TASK 4: ADD REVIEW ---- */
-
-async function submitReview(token, placeId, reviewText, rating) {
-    const response = await fetch(`${API_URL}/reviews/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-            text: reviewText,
-            rating: parseInt(rating),
-            place_id: placeId
-        })
-    });
-    return response;
-}
-
-function handleReviewResponse(response, form) {
-    const successMsg = document.getElementById('success-msg');
-    const errorMsg   = document.getElementById('error-msg');
-
-    if (response.ok) {
-        successMsg.classList.remove('d-none');
-        errorMsg.classList.add('d-none');
-        form.reset();
-        const placeId = getPlaceIdFromURL();
-        setTimeout(() => {
-            window.location.href = `place.html?id=${placeId}`;
-        }, 2000);
-    } else {
-        errorMsg.classList.remove('d-none');
-        successMsg.classList.add('d-none');
-    }
-}
-
-/* ---- EVENT LISTENERS ---- */
-
-document.addEventListener('DOMContentLoaded', () => {
-
-    /* --- Login Form (Task 1) --- */
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const email    = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const errorMsg = document.getElementById('login-error');
-
-            try {
-                const response = await loginUser(email, password);
-                if (response.ok) {
-                    const data = await response.json();
-                    setCookie('token', data.access_token, 1);
-                    window.location.href = 'index.html';
-                } else {
-                    if (errorMsg) {
-                        errorMsg.textContent = 'Invalid email or password. Please try again.';
-                        errorMsg.classList.remove('d-none');
-                    }
-                }
-            } catch (error) {
-                if (errorMsg) {
-                    errorMsg.textContent = 'Connection error. Make sure the API is running.';
-                    errorMsg.classList.remove('d-none');
-                }
-            }
-        });
-    }
-
-    /* --- Index Page (Task 2) --- */
-    const placesList = document.getElementById('places-list');
-    if (placesList) {
-        checkAuthentication();
-        const priceFilter = document.getElementById('price-filter');
-        if (priceFilter) {
-            priceFilter.addEventListener('change', (event) => {
-                filterPlaces(event.target.value);
-            });
-        }
-    }
-
-    /* --- Place Details Page (Task 3) --- */
-    const placeDetails = document.getElementById('place-details');
-    if (placeDetails) {
-        checkAuthentication();
-    }
-
-    /* --- Add Review Page (Task 4) --- */
-    const reviewForm = document.getElementById('review-form');
-    const addReviewCard = document.querySelector('.add-review');
-
-    if (reviewForm && addReviewCard) {
-        const token = getCookie('token');
-        if (!token) {
-            window.location.href = 'index.html';
-        }
-
-        const placeId = getPlaceIdFromURL();
-        const backLink = document.querySelector('a[href="place.html"]');
-        if (backLink && placeId) {
-            backLink.href = `place.html?id=${placeId}`;
-        }
-
-        reviewForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-
-            const reviewText  = document.getElementById('review-text').value.trim();
-            const ratingInput = document.querySelector('input[name="rating"]:checked');
-            const ratingError = document.getElementById('rating-error');
-
-            if (!ratingInput) {
-                ratingError.classList.remove('d-none');
-                return;
-            }
-            ratingError.classList.add('d-none');
-
-            const rating   = ratingInput.value;
-            const response = await submitReview(token, placeId, reviewText, rating);
-            handleReviewResponse(response, reviewForm);
-        });
-    }
-
-});
-```
+---
 
 ---
 
@@ -2552,6 +2013,7 @@ with app.app_context():
 
 # Login
 ## Admin
+
 ```bash
 TOKEN=$(curl -s -X POST http://127.0.0.1:5000/api/v1/auth/login \
   -H "Content-Type: application/json" \
@@ -2559,10 +2021,10 @@ TOKEN=$(curl -s -X POST http://127.0.0.1:5000/api/v1/auth/login \
 echo $TOKEN
 ```
 
-first_name: Admin
-last_name: User
-Email: admin@hbnb.io
-Password: admin1234
+first_name: Admin  
+last_name: User  
+Email: admin@hbnb.io  
+Password: admin1234  
 
 
 ---
@@ -2576,10 +2038,10 @@ curl -X POST http://127.0.0.1:5000/api/v1/users/ \
 
 ```
 
-first_name: Test
-last_name: User
-email: test@example.com
-password: password123
+first_name: Test  
+last_name: User  
+email: test@example.com  
+password: password123  
 
 
 ---
@@ -2592,10 +2054,10 @@ curl -X POST http://127.0.0.1:5000/api/v1/users/ \
   -d '{"first_name":"Julian","last_name":"Gonzalez","email":"julian@example.com","password":"password456"}'
 
 ```
-first_name: Julian
-last_name: Gonzalez
-email: julian@example.com
-Password: password456
+first_name: Julian  
+last_name: Gonzalez  
+email: julian@example.com  
+Password: password456  
 
 
 ---
@@ -2609,20 +2071,15 @@ curl -X POST http://127.0.0.1:5000/api/v1/places/ \
   -d '{"title":"Apartment in Paris","description":"Charming apartment in the heart of Paris, steps from the Eiffel Tower.","price":10,"latitude":48.8566,"longitude":2.3522,"amenities":[],"image_url":"images/paris.jpg"}'
 
 ```
-
-```bash
-
-```
-
-```bash
-
-```
+---
 
 ## Verificar
 ```bash
 curl -X GET http://127.0.0.1:5000/api/v1/places/ \
   -H "Content-Type: application/json"
 ```
+
+---
 
 # IMG
 ```bash
@@ -2634,7 +2091,7 @@ UPDATE places SET image_url='images/rennes.jpg' WHERE id='1a2e2494-296f-42f5-bd1
 
 ```
 
-
+---
 
 # Amenity
 
@@ -2726,20 +2183,20 @@ python3 -m http.server 5500
 
 
 
-first_name: Admin
-last_name: User
-Email: admin@hbnb.io
-Password: admin1234
+first_name: Admin  
+last_name: User  
+Email: admin@hbnb.io  
+Password: admin1234  
 
-first_name: Test
-last_name: User
-email: test@example.com
-password: password123
+first_name: Test  
+last_name: User  
+email: test@example.com  
+password: password123  
 
-first_name: Julian
-last_name: Gonzalez
-email: julian@example.com
-Password: password456
+first_name: Julian  
+last_name: Gonzalez  
+email: julian@example.com  
+Password: password456  
 
 
 ---
